@@ -376,10 +376,6 @@ Key files:
 
 - `docs/final_deliverables/final_deliverables_index.md`
 - `docs/final_deliverables/final_deliverables_manifest.json`
-- `docs/final_deliverables/Bosch_Production_Line_Performance_Research_Report.md`
-- `docs/final_deliverables/Bosch_Production_Line_Performance_Research_Report.docx`
-- `docs/final_deliverables/Bosch_Production_Line_Performance_Presentation.pptx`
-- `docs/final_deliverables/Bosch_Production_Line_Performance_Final_Deliverables.zip`
 
 ## Unified Project Streamlit Dashboard
 
