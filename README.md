@@ -387,22 +387,3 @@ Start the dashboard:
 Key file:
 
 - `app/project_streamlit_dashboard.py`
-
-## Full Research Paper
-
-The full IEEE-style research paper expands the final report into a 20+ page
-technical document and includes supplemental work that was completed but not
-used as production-safe input.
-
-Generate or refresh it:
-
-```powershell
-.\.venv\Scripts\python.exe src\deliverables\full_research_paper.py
-```
-
-Key files:
-
-- `docs/final_deliverables/Bosch_Production_Line_Performance_Full_Research_Paper_20plus.docx`
-- `docs/final_deliverables/Bosch_Production_Line_Performance_Full_Research_Paper_20plus.md`
-- `docs/final_deliverables/full_research_paper_manifest.json`
-
