@@ -372,11 +372,6 @@ Generate or refresh the final package:
 .\.venv\Scripts\python.exe src\deliverables\final_deliverables.py
 ```
 
-Key files:
-
-- `docs/final_deliverables/final_deliverables_index.md`
-- `docs/final_deliverables/final_deliverables_manifest.json`
-
 ## Unified Project Streamlit Dashboard
 
 The unified dashboard brings the full project into one Streamlit application:
