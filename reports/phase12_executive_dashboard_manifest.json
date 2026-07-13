@@ -1,0 +1,10 @@
+{
+  "failure_time_periods": 20,
+  "duration_periods": 20,
+  "executive_kpis": 9,
+  "historical_failure_rate_pct": 0.581120796927046,
+  "top_risk_station": "L3_S32",
+  "top_bottleneck_station": "L1_S25",
+  "test_products_scored": 1183748,
+  "test_alerts": 6998
+}

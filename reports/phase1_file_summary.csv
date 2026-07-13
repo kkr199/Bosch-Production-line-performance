@@ -1,0 +1,7 @@
+dataset,file_size_mb,rows,columns,feature_columns,id_present,target_present,total_missing_values,missing_value_pct
+train_numeric,2040.77,1183747,970,968,TRUE,TRUE,929125166,80.9177
+train_categorical,2554.27,1183747,2141,2140,TRUE,FALSE,2465567643,97.284
+train_date,2759.33,1183747,1157,1156,TRUE,FALSE,1125431152,82.1725
+test_numeric,2038.27,1183748,969,968,TRUE,FALSE,929173660,81.0054
+test_categorical,2554.2,1183748,2141,2140,TRUE,FALSE,2465604793,97.2854
+test_date,2759.2,1183748,1157,1156,TRUE,FALSE,1125501041,82.1776

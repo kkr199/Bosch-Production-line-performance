@@ -1,0 +1,3 @@
+split,product_count,avg_productive_time,avg_waiting_time,median_waiting_time,p90_waiting_time,avg_cycle_time,avg_throughput_efficiency,median_throughput_efficiency,avg_wait_events,failure_count,labeled_count,failure_rate_pct
+test,1183748,0.17295974,10.51978,3.6799927,33.829956,10.6980095,0.0046752444,0.0,5.410873767051771,0.0,0,
+train,1183747,0.17294121,10.540214,3.6900024,33.910034,10.718425,0.004713348,0.0,5.409192166907287,6879.0,1183747,0.581120796927046

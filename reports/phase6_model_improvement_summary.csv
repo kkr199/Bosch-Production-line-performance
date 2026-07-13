@@ -1,0 +1,6 @@
+model,production_safe,threshold,mcc,precision,recall,f1,pr_auc,notes,experiment,config_name,feature_count
+Phase 6 LightGBM baseline,True,0.7850833205452785,0.3386417414608916,0.5743348982785602,0.2133720930232558,0.311148791860958,0.2528666766394269,Accepted Phase 6 production-safe benchmark.,,,
+Validation-optimized blend,False,0.9926103312868763,0.3238135653859991,0.5919854280510018,0.18895348837209303,0.2864698104892023,0.1874817078699298,Research upper bound; weights selected on validation.,,,
+Tuned LightGBM - original features,True,0.5124732406959528,0.31444433020998835,0.5342679127725857,0.1994186046511628,0.2904318374259102,0.15344363812701825,Best config: balanced_wide.,original_phase6_features,balanced_wide,323.0
+Tuned LightGBM - graph trajectory features,True,0.5124732406959528,0.31147446986132815,0.5322834645669291,0.19651162790697674,0.2870488322717622,0.1512055229955947,Best config: balanced_wide.,phase6_plus_graph_trajectory,balanced_wide,334.0
+Family-aware LightGBM,True,0.512344475771067,0.2459098951750761,0.3933774834437086,0.17267441860465116,0.24,0.13972732600033627,Family-specific models where sample size allows; global fallback otherwise.,,,

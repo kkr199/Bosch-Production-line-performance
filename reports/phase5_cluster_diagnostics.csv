@@ -1,0 +1,4 @@
+method,cluster_count,noise_count,rows_labeled,unique_path_count,sample_silhouette
+KMeans,8,0,1183747,7927,0.19096234440803528
+DBSCAN,7,855,1183747,7927,0.23121806979179382
+Hierarchical,8,0,1183747,7927,0.25824999809265137

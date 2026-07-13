@@ -1,0 +1,16 @@
+{
+  "model_metrics": 5,
+  "failure_drivers": 100,
+  "station_root_causes": 24,
+  "engineer_actions": 12,
+  "station_failure_rates": 52,
+  "line_failure_rates": 4,
+  "bottlenecks": 52,
+  "throughput_efficiency": 2,
+  "critical_nodes": 52,
+  "propagation_routes": 50,
+  "advanced_ai_metrics": 5,
+  "product_predictions": 1240468,
+  "production_summary": 10,
+  "source_catalog": 13
+}

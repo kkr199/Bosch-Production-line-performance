@@ -1,0 +1,5 @@
+line,station_count,numeric_feature_count,categorical_feature_count,date_feature_count,total_feature_count
+0,24,168,323,184,675
+1,2,513,1227,621,2361
+2,3,42,159,78,279
+3,23,245,431,273,949

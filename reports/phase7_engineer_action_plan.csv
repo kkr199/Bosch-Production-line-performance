@@ -1,0 +1,13 @@
+station,root_cause_priority,primary_driver,recommended_action,validation_failure_rate_pct
+line_level,0.5711180553111903,line_3_end_time,"Review cycle-time, waiting-time, and queue behavior for products following this path.",3.0324400564174896
+timing_level,0.4753904292811107,start_time,"Review cycle-time, waiting-time, and queue behavior for products following this path.",3.0324400564174896
+L1_S24,0.2617656995842046,L1_S24_F1844,"Review measurement distributions, tooling condition, calibration records, and recent process changes for this station.",3.0324400564174896
+path_level,0.08192226860157337,path_complexity_score,Use this as a cross-station signal; compare affected product families and paths before station-specific action.,3.0324400564174896
+L3_S32,0.06804418834584117,L3_S32_F3850__is_missing,"Check whether skipped measurements, sensor dropouts, or alternate routing through this station align with failures.",3.0324400564174896
+other,0.02744706929232985,observed_date_values,Use this as a cross-station signal; compare affected product families and paths before station-specific action.,3.0324400564174896
+L2_S27,0.02331666790132748,L2_S27_F3144,"Check whether skipped measurements, sensor dropouts, or alternate routing through this station align with failures.",3.0324400564174896
+L1_S25,0.02221684562776359,L1_S25_F2990,"Check whether skipped measurements, sensor dropouts, or alternate routing through this station align with failures.",3.0324400564174896
+L2_S28,0.007347768301905726,L2_S28_F3248,"Check whether skipped measurements, sensor dropouts, or alternate routing through this station align with failures.",3.0324400564174896
+L3_S49,0.006772143353444298,L3_S49_F4211,"Check whether skipped measurements, sensor dropouts, or alternate routing through this station align with failures.",3.0324400564174896
+L3_S38,0.001542625408143184,L3_S38_F3952__is_missing,"Check whether skipped measurements, sensor dropouts, or alternate routing through this station align with failures.",3.0324400564174896
+L0_S10,0.001404531119633306,L0_S10_F215__is_missing,"Check whether skipped measurements, sensor dropouts, or alternate routing through this station align with failures.",3.0324400564174896

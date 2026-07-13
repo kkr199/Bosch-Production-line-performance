@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Phase 9 Manufacturing Knowledge Graph</title>
+<style>
+body{margin:0;background:#FCFCFD;color:#1F2430;font-family:'Segoe UI',Arial,sans-serif;line-height:1.55}
+main{max-width:1120px;margin:auto;padding:38px 28px 60px} h1{font-size:30px;margin:0 0 20px} h2{margin-top:42px;font-size:21px}
+.summary{border-left:4px solid #5477C4;padding:6px 18px;background:#fff} .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:24px 0}
+.metric{background:#fff;border:1px solid #E6E8F0;padding:16px} .metric strong{display:block;font-size:23px} .metric span{color:#6F768A;font-size:13px}
+img{width:100%;height:auto;background:#fff;margin:10px 0} .note{background:#FFF4C2;border-left:4px solid #B8A037;padding:12px 16px}
+.data-table{width:100%;border-collapse:collapse;background:#fff;font-size:13px} th,td{padding:9px;border-bottom:1px solid #E6E8F0;text-align:left} th{background:#F4F5F7}
+code{font-family:Consolas,monospace} @media(max-width:760px){.metrics{grid-template-columns:1fr 1fr}main{padding:24px 16px}}
+</style></head><body><main>
+<h1>Phase 9: Manufacturing Knowledge Graph</h1>
+<section data-contract-section="technical-summary"><h2>Technical summary</h2><div class="summary">
+<p>The graph connects production lines, stations, raw numeric/categorical/date features, observed station transitions, and the production-safe model's failure evidence. <strong>L1_S24</strong> is the highest-ranked critical station with a composite score of <strong>60.1</strong>.</p>
+<p>The top candidate propagation route is <strong>L3_S29 → L3_S30 → L3_S33 → L3_S34</strong>. It is a prioritized investigation path, not proof that one station physically caused a later failure.</p></div></section>
+<div class="metrics"><div class="metric"><strong>4,321</strong><span>Graph nodes</span></div><div class="metric"><strong>4,923</strong><span>Graph relationships</span></div><div class="metric"><strong>52</strong><span>Stations scored</span></div><div class="metric"><strong>50</strong><span>Candidate routes</span></div></div>
+<section data-contract-section="key-findings"><h2>Critical nodes combine operational and model evidence</h2><p>The score balances bottlenecks, observed failure lift, station-level SHAP attribution, network centrality, and product volume. This makes the ranking suitable for investigation queues without treating any one signal as a root-cause verdict.</p><img src="figures/phase9_critical_nodes.png" alt="Ranked critical stations"></section>
+<section><h2>Station relationships reveal influential transfer points</h2><p>PageRank emphasizes stations receiving flow from other influential stations, while betweenness highlights bridges that sit on many high-volume paths. The network view limits itself to the most critical nodes so labels and direction remain readable.</p><img src="figures/phase9_station_relationship_network.png" alt="Station transition network"></section>
+<section><h2>Candidate propagation routes focus engineering investigation</h2><p>Routes are ranked from transition volume, transition-level failure rate, and critical-node evidence. Engineers should validate the route against sensor history, maintenance logs, product family, and timestamps before taking action.</p><img src="figures/phase9_candidate_propagation_routes.png" alt="Candidate propagation routes"></section>
+<section data-contract-section="scope-data-metrics"><h2>Scope and definitions</h2><p>The hierarchy covers deduplicated raw feature metadata from numeric, categorical, and date datasets. Failure associations use absolute SHAP values from the production-safe Phase 6 LightGBM model. Station relationships use Phase 8 transitions reconstructed from raw train and test date files; failure rates use labeled training products only.</p></section>
+<section data-contract-section="methodology"><h2>Methodology and audit tables</h2><table class="dataframe data-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>critical_rank</th>
+      <th>station</th>
+      <th>critical_node_score</th>
+      <th>centrality_score</th>
+      <th>bottleneck_score</th>
+      <th>failure_lift</th>
+      <th>station_shap_importance</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1.000</td>
+      <td>L1_S24</td>
+      <td>60.084</td>
+      <td>0.091</td>
+      <td>74.372</td>
+      <td>1.475</td>
+      <td>0.262</td>
+    </tr>
+    <tr>
+      <td>2.000</td>
+      <td>L3_S29</td>
+      <td>52.954</td>
+      <td>0.640</td>
+      <td>54.275</td>
+      <td>1.042</td>
+      <td>0.000</td>
+    </tr>
+    <tr>
+      <td>3.000</td>
+      <td>L3_S32</td>
+      <td>50.897</td>
+      <td>0.127</td>
+      <td>40.179</td>
+      <td>8.031</td>
+      <td>0.068</td>
+    </tr>
+    <tr>
+      <td>4.000</td>
+      <td>L3_S30</td>
+      <td>47.343</td>
+      <td>0.502</td>
+      <td>50.161</td>
+      <td>1.043</td>
+      <td>0.000</td>
+    </tr>
+    <tr>
+      <td>5.000</td>
+      <td>L3_S34</td>
+      <td>46.018</td>
+      <td>0.612</td>
+      <td>34.150</td>
+      <td>0.914</td>
+      <td>0.000</td>
+    </tr>
+    <tr>
+      <td>6.000</td>
+      <td>L3_S33</td>
+      <td>44.627</td>
+      <td>0.507</td>
+      <td>41.447</td>
+      <td>0.887</td>
+      <td>0.000</td>
+    </tr>
+    <tr>
+      <td>7.000</td>
+      <td>L3_S39</td>
+      <td>44.236</td>
+      <td>0.500</td>
+      <td>51.848</td>
+      <td>0.901</td>
+      <td>0.000</td>
+    </tr>
+    <tr>
+      <td>8.000</td>
+      <td>L1_S25</td>
+      <td>42.763</td>
+      <td>0.068</td>
+      <td>88.337</td>
+      <td>0.903</td>
+      <td>0.023</td>
+    </tr>
+    <tr>
+      <td>9.000</td>
+      <td>L3_S37</td>
+      <td>42.579</td>
+      <td>0.559</td>
+      <td>26.860</td>
+      <td>1.043</td>
+      <td>0.000</td>
+    </tr>
+    <tr>
+      <td>10.000</td>
+      <td>L0_S13</td>
+      <td>39.598</td>
+      <td>0.241</td>
+      <td>58.956</td>
+      <td>0.974</td>
+      <td>0.000</td>
+    </tr>
+    <tr>
+      <td>11.000</td>
+      <td>L3_S38</td>
+      <td>38.520</td>
+      <td>0.142</td>
+      <td>70.631</td>
+      <td>1.392</td>
+      <td>0.002</td>
+    </tr>
+    <tr>
+      <td>12.000</td>
+      <td>L2_S26</td>
+      <td>37.588</td>
+      <td>0.184</td>
+      <td>55.505</td>
+      <td>1.331</td>
+      <td>0.000</td>
+    </tr>
+  </tbody>
+</table><br><table class="dataframe data-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>propagation_rank</th>
+      <th>candidate_route</th>
+      <th>route_score</th>
+      <th>minimum_transition_count</th>
+      <th>mean_transition_failure_rate_pct</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1.000</td>
+      <td>L3_S29&gt;L3_S30&gt;L3_S33&gt;L3_S34</td>
+      <td>51.722</td>
+      <td>965,844.000</td>
+      <td>0.507</td>
+    </tr>
+    <tr>
+      <td>2.000</td>
+      <td>L3_S29&gt;L3_S30&gt;L3_S33&gt;L3_S37</td>
+      <td>50.805</td>
+      <td>654,274.000</td>
+      <td>0.520</td>
+    </tr>
+    <tr>
+      <td>3.000</td>
+      <td>L1_S24&gt;L3_S29&gt;L3_S30&gt;L3_S33</td>
+      <td>50.282</td>
+      <td>25,747.000</td>
+      <td>0.744</td>
+    </tr>
+    <tr>
+      <td>4.000</td>
+      <td>L1_S24&gt;L2_S26&gt;L3_S29&gt;L3_S30&gt;L3_S33&gt;L3_S34</td>
+      <td>50.088</td>
+      <td>243,524.000</td>
+      <td>0.630</td>
+    </tr>
+    <tr>
+      <td>5.000</td>
+      <td>L1_S24&gt;L2_S26&gt;L3_S29&gt;L3_S30</td>
+      <td>50.074</td>
+      <td>243,524.000</td>
+      <td>0.734</td>
+    </tr>
+    <tr>
+      <td>6.000</td>
+      <td>L2_S26&gt;L3_S29&gt;L3_S30&gt;L3_S33</td>
+      <td>49.894</td>
+      <td>257,914.000</td>
+      <td>0.610</td>
+    </tr>
+    <tr>
+      <td>7.000</td>
+      <td>L1_S24&gt;L3_S29&gt;L3_S30&gt;L3_S33&gt;L3_S34&gt;L3_S37</td>
+      <td>49.687</td>
+      <td>25,747.000</td>
+      <td>0.636</td>
+    </tr>
+    <tr>
+      <td>8.000</td>
+      <td>L3_S29&gt;L3_S30&gt;L3_S34&gt;L3_S37</td>
+      <td>49.572</td>
+      <td>264,184.000</td>
+      <td>0.576</td>
+    </tr>
+    <tr>
+      <td>9.000</td>
+      <td>L1_S24&gt;L2_S26&gt;L3_S29&gt;L3_S30&gt;L3_S33&gt;L3_S37</td>
+      <td>49.512</td>
+      <td>243,524.000</td>
+      <td>0.638</td>
+    </tr>
+    <tr>
+      <td>10.000</td>
+      <td>L1_S24&gt;L3_S29&gt;L3_S30&gt;L3_S32</td>
+      <td>49.427</td>
+      <td>25,747.000</td>
+      <td>2.040</td>
+    </tr>
+  </tbody>
+</table></section>
+<section data-contract-section="limitations"><h2>Limitations and uncertainty</h2><div class="note"><strong>Association is not causation.</strong> SHAP explains model behavior, station transitions describe observed routing, and timestamps are sparse relative-time markers. The graph cannot establish that an upstream station physically caused a downstream defect without intervention, maintenance, sensor, and quality-control evidence.</div></section>
+<section data-contract-section="recommended-next-steps"><h2>Recommended next steps</h2><ol><li>Inspect the top critical stations and routes by product family and time window.</li><li>Join future maintenance, alarm, calibration, and operator-event data to graph nodes.</li><li>Track whether corrective actions reduce failure lift and bottleneck scores.</li></ol></section>
+<section data-contract-section="further-questions"><h2>Further questions</h2><p>Do the same routes remain critical after controlling for product family? Which nodes align with known machine ownership and maintenance events? Can future timestamp data provide true event durations rather than relative-time proxies?</p></section>
+</main></body></html>
