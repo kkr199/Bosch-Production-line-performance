@@ -2,8 +2,12 @@
 /train_*.csv
 /test_*.csv
 
-# Generated and derived datasets (includes train/test data)
-/data/
+# Generated and derived datasets (includes train/test data).
+# Keep only the compact SQLite database required by the deployed dashboard.
+/data/*
+!/data/database/
+/data/database/*
+!/data/database/manufacturing_copilot.db
 
 # Local Python environment and caches
 /.venv/
