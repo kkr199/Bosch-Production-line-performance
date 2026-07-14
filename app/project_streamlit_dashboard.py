@@ -53,6 +53,16 @@ def load_json(relative_path: str) -> dict:
         return json.load(file)
 
 
+@st.cache_data
+def load_optional_json(relative_path: str) -> dict:
+    """Load an optional JSON artifact without crashing a deployed dashboard."""
+    path = PROJECT_ROOT / relative_path
+    if not path.exists():
+        return {}
+    with path.open("r", encoding="utf-8") as file:
+        return json.load(file)
+
+
 def pct(value: float, digits: int = 2) -> str:
     return f"{value:.{digits}f}%"
 
@@ -74,7 +84,7 @@ def page_overview(lines: list[str]) -> None:
     source_catalog = query("SELECT * FROM source_catalog ORDER BY table_name")
     phase11 = load_json("reports/phase11_database_manifest.json")
     phase12 = load_json("reports/phase12_executive_dashboard_manifest.json")
-    deliverables = load_json("docs/final_deliverables/final_deliverables_manifest.json")
+    deliverables = load_optional_json("docs/final_deliverables/final_deliverables_manifest.json")
 
     cols = st.columns(6)
     cols[0].metric("Historical failure rate", pct(baseline.loc["historical_failure_rate", "value"] * 100, 3))
@@ -82,7 +92,7 @@ def page_overview(lines: list[str]) -> None:
     cols[2].metric("Validation precision", pct(baseline.loc["model_precision", "value"] * 100, 1))
     cols[3].metric("Test products scored", f"{int(baseline.loc['test_products_scored', 'value']):,}")
     cols[4].metric("Predicted alerts", f"{int(baseline.loc['test_alerts', 'value']):,}")
-    cols[5].metric("Deliverables complete", f"{len(deliverables['deliverables'])}/8")
+    cols[5].metric("Deliverables complete", f"{len(deliverables.get('deliverables', []))}/8")
 
     left, right = st.columns([1.15, 1])
     trend = query("SELECT * FROM failure_time_trends ORDER BY period_order")
@@ -465,17 +475,30 @@ def page_business_impact() -> None:
 
 def page_deliverables() -> None:
     st.header("Final Deliverables and Project Documentation")
-    manifest = load_json("docs/final_deliverables/final_deliverables_manifest.json")
-    deliverables = pd.DataFrame(manifest["deliverables"])
-    deliverables["primary_artifacts"] = deliverables["primary_artifacts"].apply(lambda values: "\n".join(values))
+    manifest = load_optional_json("docs/final_deliverables/final_deliverables_manifest.json")
+    deliverables = pd.DataFrame(manifest.get("deliverables", []))
+
+    if "primary_artifacts" in deliverables:
+        deliverables["primary_artifacts"] = deliverables["primary_artifacts"].apply(
+            lambda values: "\n".join(values)
+        )
+
+    complete_count = (
+        int((deliverables["status"] == "Complete").sum())
+        if "status" in deliverables
+        else 0
+    )
 
     cols = st.columns(4)
     cols[0].metric("Deliverables", f"{len(deliverables)}")
-    cols[1].metric("Complete", f"{(deliverables['status'] == 'Complete').sum()}")
+    cols[1].metric("Complete", f"{complete_count}")
     cols[2].metric("Apps", "3")
-    cols[3].metric("Reports package", "Ready")
+    cols[3].metric("Reports package", "Ready" if not deliverables.empty else "Not included")
 
-    st.dataframe(deliverables, width="stretch", hide_index=True)
+    if deliverables.empty:
+        st.info("The optional final-deliverables package is not included in this deployment.")
+    else:
+        st.dataframe(deliverables, width="stretch", hide_index=True)
 
     files = [
         DOCS_DIR / "final_deliverables_index.md",
@@ -488,7 +511,8 @@ def page_deliverables() -> None:
         for path in files
         if path.exists()
     ]
-    st.dataframe(pd.DataFrame(artifact_rows), width="stretch", hide_index=True)
+    if artifact_rows:
+        st.dataframe(pd.DataFrame(artifact_rows), width="stretch", hide_index=True)
 
 
 def main() -> None:
