@@ -84,15 +84,13 @@ def page_overview(lines: list[str]) -> None:
     source_catalog = query("SELECT * FROM source_catalog ORDER BY table_name")
     phase11 = load_json("reports/phase11_database_manifest.json")
     phase12 = load_json("reports/phase12_executive_dashboard_manifest.json")
-    deliverables = load_optional_json("docs/final_deliverables/final_deliverables_manifest.json")
 
-    cols = st.columns(6)
+    cols = st.columns(5)
     cols[0].metric("Historical failure rate", pct(baseline.loc["historical_failure_rate", "value"] * 100, 3))
     cols[1].metric("Validation MCC", f"{baseline.loc['model_mcc', 'value']:.3f}")
     cols[2].metric("Validation precision", pct(baseline.loc["model_precision", "value"] * 100, 1))
     cols[3].metric("Test products scored", f"{int(baseline.loc['test_products_scored', 'value']):,}")
     cols[4].metric("Predicted alerts", f"{int(baseline.loc['test_alerts', 'value']):,}")
-    cols[5].metric("Deliverables complete", f"{len(deliverables.get('deliverables', []))}/8")
 
     left, right = st.columns([1.15, 1])
     trend = query("SELECT * FROM failure_time_trends ORDER BY period_order")
@@ -517,7 +515,6 @@ def page_deliverables() -> None:
 
 def main() -> None:
     st.title("Bosch Manufacturing Analytics Dashboard")
-    st.caption("End-to-end project dashboard: KPIs, models, segmentation, process mining, root cause, graph, copilot, and deliverables")
 
     if not DATABASE_PATH.exists():
         st.error("Missing SQLite database. Run `python src/data/phase11_manufacturing_copilot.py` first.")
