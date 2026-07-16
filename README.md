@@ -361,16 +361,6 @@ Key files:
 - `notebooks/phase12_executive_dashboard.ipynb`
 - `reports/phase12_executive_dashboard_report.md`
 
-## Final Deliverables
-
-The final deliverable package maps the project roadmap items 68-75 to concrete
-models, scripts, notebooks, dashboards, documentation, and presentation files.
-
-Generate or refresh the final package:
-
-```powershell
-.\.venv\Scripts\python.exe src\deliverables\final_deliverables.py
-```
 
 ## Unified Project Streamlit Dashboard
 
