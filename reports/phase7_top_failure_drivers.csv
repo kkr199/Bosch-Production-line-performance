@@ -1,101 +1,101 @@
-feature,mean_abs_shap,mean_signed_shap,line,station,feature_family,model_importance,driver_rank,driver_type
-start_time,0.19696799831907538,-0.003909270293832812,timing,timing_level,timing,512.0,1,Timing or delay signal
-line_0_start_time,0.1144820564477132,0.010972401340375764,L0,line_level,line_timing,385.0,2,Line-level timing signal
-line_3_end_time,0.09472544395775677,-0.0039770028635833414,L3,line_level,line_timing,88.0,3,Line-level timing signal
-line_3_start_time,0.08286576912916405,-0.02710344274411696,L3,line_level,line_timing,264.0,4,Line-level timing signal
-end_time,0.07627099903139474,0.012949280816973564,timing,timing_level,timing,474.0,5,Timing or delay signal
-L3_S32_F3850__is_missing,0.06555429002091039,-0.015548728148805419,L3,L3_S32,raw_measurement_missingness,111.0,6,Missingness / skipped measurement signal
-mean_waiting_time,0.04783857484770251,-0.020766203691638813,timing,timing_level,timing,875.0,7,Timing or delay signal
-line_0_end_time,0.04612209113363654,-0.013111891733037454,L0,line_level,line_timing,184.0,8,Line-level timing signal
-max_waiting_time,0.04382822662250216,0.017783485523900387,timing,timing_level,timing,772.0,9,Timing or delay signal
-cycle_time,0.04321061972291579,-0.0020511106495366264,timing,timing_level,timing,732.0,10,Timing or delay signal
-line_3_observed_date_values,0.03965662040567594,0.003055301056975864,L3,line_level,line_timing,134.0,11,Line-level timing signal
-line_3_processing_duration,0.038698942642382814,0.0014423283769415692,L3,line_level,line_timing,723.0,12,Line-level timing signal
-waiting_time,0.03634315874696266,-0.011749977832158795,timing,timing_level,timing,314.0,13,Timing or delay signal
-line_3_station_count,0.02790840020407451,0.013907114409311317,L3,line_level,line_timing,130.0,14,Line-level timing signal
-line_0_processing_duration,0.026870847712835367,0.0005053241780507659,L0,line_level,line_timing,495.0,15,Line-level timing signal
-path_complexity_score,0.022786843076717248,0.019431471393663934,path,path_level,path_or_family,135.0,16,Manufacturing path signal
-line_2_start_time,0.022172595173950434,0.0007322776949727811,L2,line_level,line_timing,299.0,17,Line-level timing signal
-L1_S24_F1844,0.020868080926770765,-0.0010405407511225287,L1,L1_S24,raw_measurement,237.0,18,Numeric process measurement
-delay_ratio,0.02075982186752844,0.0011912892602786607,timing,timing_level,timing,406.0,19,Timing or delay signal
-line_1_end_time,0.020270004985413287,-0.0017999417571425817,L1,line_level,line_timing,131.0,20,Line-level timing signal
-L2_S27_F3144,0.020076850288554784,-0.0014935365482130975,L2,L2_S27,raw_measurement,330.0,21,Numeric process measurement
-station_count,0.018685627912254095,-0.015317043852953292,path,path_level,path_or_family,54.0,22,Manufacturing path signal
-line_1_start_time,0.017815220509408047,0.016745107233376504,L1,line_level,line_timing,174.0,23,Line-level timing signal
-L1_S24_F1846,0.017420639836852013,0.0007767782224382717,L1,L1_S24,raw_measurement,228.0,24,Numeric process measurement
-line_2_end_time,0.015876400066859635,0.0035404365209953763,L2,line_level,line_timing,89.0,25,Line-level timing signal
-L1_S24_F1723,0.013796733938956984,0.0033632710435483283,L1,L1_S24,raw_measurement,109.0,26,Numeric process measurement
-observed_date_values,0.012950280865641164,0.0034814706645354375,other,other,categorical_or_other,195.0,27,Categorical or derived signal
-kmeans_family,0.01266612018564661,-0.0015913493731764521,path,path_level,path_or_family,241.0,28,Manufacturing path signal
-L1_S24_F1778,0.012306244881160762,0.001526147784627693,L1,L1_S24,raw_measurement,180.0,29,Numeric process measurement
-L1_S24_F1667,0.011677657117930047,-0.0014478824859488356,L1,L1_S24,raw_measurement,140.0,30,Numeric process measurement
-wait_event_count,0.010694178707590802,-0.0006772581244834348,other,other,categorical_or_other,206.0,31,Categorical or derived signal
-L1_S24_F1498,0.010411870206603573,0.003003825957324523,L1,L1_S24,raw_measurement,150.0,32,Numeric process measurement
-processing_duration,0.01017103012302903,0.004206176521586622,timing,timing_level,timing,220.0,33,Timing or delay signal
-L1_S24_F1713,0.00902368727362332,0.0006166215853108845,L1,L1_S24,raw_measurement,84.0,34,Numeric process measurement
-line_3_date_completeness_pct,0.008684347766701178,-0.00015167340767917442,L3,line_level,line_timing,27.0,35,Line-level timing signal
-L1_S24_F1842,0.008443756525367052,-0.0006890552550361957,L1,L1_S24,raw_measurement,115.0,36,Numeric process measurement
-L1_S24_F1758,0.008325255691303131,-0.0008062967897776808,L1,L1_S24,raw_measurement,157.0,37,Numeric process measurement
-L1_S24_F958,0.008039187728172418,0.00013416659647048364,L1,L1_S24,raw_measurement,77.0,38,Numeric process measurement
-path_density,0.008021009239153517,0.0002908920559319544,path,path_level,path_or_family,74.0,39,Manufacturing path signal
-L1_S24_F1672,0.007512107266130241,-0.0014616695593647035,L1,L1_S24,raw_measurement,121.0,40,Numeric process measurement
-L1_S24_F1609,0.007409266191282727,-0.0006402325355749748,L1,L1_S24,raw_measurement,63.0,41,Numeric process measurement
-L1_S24_F1122,0.007310561039150914,-0.0011435113472235963,L1,L1_S24,raw_measurement,120.0,42,Numeric process measurement
-L3_S49_F4211,0.006772143353444298,0.0005815130190191873,L3,L3_S49,raw_measurement,187.0,43,Numeric process measurement
-L1_S24_F1490,0.006767802803274419,-0.00040254156626550705,L1,L1_S24,raw_measurement,44.0,44,Numeric process measurement
-L1_S24_F1002,0.006573938063480517,8.312852639902838e-05,L1,L1_S24,raw_measurement,70.0,45,Numeric process measurement
-L1_S24_F1176,0.006549645806693899,-0.0006038547641302644,L1,L1_S24,raw_measurement,76.0,46,Numeric process measurement
-line_1_processing_duration,0.0064843141203981105,-0.003219720923241591,L1,line_level,line_timing,77.0,47,Line-level timing signal
-hierarchical_family,0.006206404192755768,0.000793319921393203,path,path_level,path_or_family,139.0,48,Manufacturing path signal
-L1_S25_F2990,0.00574886256351007,-0.00040002654608357695,L1,L1_S25,raw_measurement,61.0,49,Numeric process measurement
-L1_S24_F1632,0.005653502237856295,0.0005105233895656798,L1,L1_S24,raw_measurement,99.0,50,Numeric process measurement
-L1_S24_F1174,0.005491342177549627,0.000534685902958335,L1,L1_S24,raw_measurement,56.0,51,Numeric process measurement
-L1_S24_F1718,0.005157007864544989,-0.0016967813899938374,L1,L1_S24,raw_measurement,109.0,52,Numeric process measurement
-L1_S24_F963,0.0051299653380983,0.0006432556663702138,L1,L1_S24,raw_measurement,61.0,53,Numeric process measurement
-L1_S24_F1695,0.0050149831478891365,-0.001070451053172412,L1,L1_S24,raw_measurement,59.0,54,Numeric process measurement
-L1_S24_F1031,0.004989302825462793,-0.0001150990874604044,L1,L1_S24,raw_measurement,53.0,55,Numeric process measurement
-station_count_phase5,0.004763841898107043,-0.004587009931139961,path,path_level,path_or_family,4.0,56,Manufacturing path signal
-L1_S24_F1212,0.004662599283695862,5.804705263986406e-05,L1,L1_S24,raw_measurement,47.0,57,Numeric process measurement
-L1_S24_F1581,0.004331234534112421,0.0002585644529622526,L1,L1_S24,raw_measurement,92.0,58,Numeric process measurement
-L1_S25_F2237,0.00413588399551171,-0.00037267978537843855,L1,L1_S25,raw_measurement,128.0,59,Numeric process measurement
-L1_S24_F1814,0.0041005355109153705,0.00036911650131591576,L1,L1_S24,raw_measurement,152.0,60,Numeric process measurement
-L1_S25_F2960,0.004032862026160294,-0.0005920447793415468,L1,L1_S25,raw_measurement,47.0,61,Numeric process measurement
-L1_S25_F2915,0.003962120295277183,-0.0009306119239296649,L1,L1_S25,raw_measurement,117.0,62,Numeric process measurement
-L1_S24_F679,0.003912046661995458,-0.0008381279165932914,L1,L1_S24,raw_measurement,49.0,63,Numeric process measurement
-L2_S28_F3248,0.0038312852437423685,0.00012626484756188868,L2,L2_S28,raw_measurement,66.0,64,Numeric process measurement
-date_completeness_pct,0.0038026097190978826,0.0005511180207598274,other,other,categorical_or_other,37.0,65,Categorical or derived signal
-final_product_family,0.0036812177166375406,0.00038032535924394914,path,path_level,path_or_family,44.0,66,Manufacturing path signal
-L1_S24_F691,0.003584396693783575,-0.00018837657185673807,L1,L1_S24,raw_measurement,87.0,67,Numeric process measurement
-L1_S24_F1102,0.0035083976996943974,-0.0007109148470681088,L1,L1_S24,raw_measurement,24.0,68,Numeric process measurement
-line_0_observed_date_values,0.003432632029803366,-0.0010540963140181453,L0,line_level,line_timing,23.0,69,Line-level timing signal
-L2_S27_F3144__is_missing,0.0032398176127726957,0.0017881603858939327,L2,L2_S27,raw_measurement_missingness,27.0,70,Missingness / skipped measurement signal
-L1_S24_F1604,0.003115585163477202,-3.2222681813979845e-05,L1,L1_S24,raw_measurement,53.0,71,Numeric process measurement
-L1_S24_F1166,0.0030572809559775995,-0.0004217370465663318,L1,L1_S24,raw_measurement,72.0,72,Numeric process measurement
-L1_S24_F1700,0.003031319302096957,-0.0007074665416113081,L1,L1_S24,raw_measurement,90.0,73,Numeric process measurement
-L1_S24_F1474,0.003001631230331149,0.00014346251938724552,L1,L1_S24,raw_measurement,31.0,74,Numeric process measurement
-L1_S24_F1126,0.002725373306533044,-0.0001134296138025418,L1,L1_S24,raw_measurement,106.0,75,Numeric process measurement
-L1_S24_F814,0.0026771928480819216,-0.0003942881885013785,L1,L1_S24,raw_measurement,38.0,76,Numeric process measurement
-L1_S24_F1494,0.0025397049924527387,-0.00029411397835754025,L1,L1_S24,raw_measurement,65.0,77,Numeric process measurement
-L3_S32_F3850,0.002433225053189863,-0.00037259232040813637,L3,L3_S32,raw_measurement,49.0,78,Numeric process measurement
-L1_S24_F1004,0.002313781099064947,-0.00018804059810384788,L1,L1_S24,raw_measurement,59.0,79,Numeric process measurement
-line_1_observed_date_values,0.0022273023810197427,0.0009770744277416519,L1,line_level,line_timing,28.0,80,Line-level timing signal
-L1_S24_F829,0.0021044993670466796,0.0003089995097903942,L1,L1_S24,raw_measurement,35.0,81,Numeric process measurement
-station_span,0.0019040232944836802,-0.0002482074487099394,path,path_level,path_or_family,27.0,82,Manufacturing path signal
-L1_S24_F1657,0.0018604583743172549,0.0005470907442394776,L1,L1_S24,raw_measurement,30.0,83,Numeric process measurement
-L2_S28_F3292,0.00185741185998894,-0.00019342158369367365,L2,L2_S28,raw_measurement,18.0,84,Numeric process measurement
-first_station,0.0017183180386787583,0.00039664153543397026,path,path_level,path_or_family,8.0,85,Manufacturing path signal
-L1_S24_F902,0.0016374657085731802,-3.8213324001510776e-05,L1,L1_S24,raw_measurement,31.0,86,Numeric process measurement
-L1_S24_F1627,0.001494313730036068,0.0001435824293051708,L1,L1_S24,raw_measurement,35.0,87,Numeric process measurement
-L1_S25_F2466,0.0014905911099975526,7.616522283686127e-05,L1,L1_S25,raw_measurement,44.0,88,Numeric process measurement
-L1_S25_F2886,0.0014296754391818095,0.0002817955161707384,L1,L1_S25,raw_measurement,50.0,89,Numeric process measurement
-L1_S24_F988,0.001416044702035941,-0.0002528435299438881,L1,L1_S24,raw_measurement,64.0,90,Numeric process measurement
-L1_S25_F2464,0.0014076933015378687,-0.0003077394363791,L1,L1_S25,raw_measurement,15.0,91,Numeric process measurement
-L0_S10_F215__is_missing,0.001404531119633306,-7.84263225140182e-05,L0,L0_S10,raw_measurement_missingness,10.0,92,Missingness / skipped measurement signal
-L1_S24_F1622,0.0012608912011172625,9.364745218447601e-05,L1,L1_S24,raw_measurement,28.0,93,Numeric process measurement
-L1_S24_F1326,0.001221477219835758,-5.0931874412066914e-05,L1,L1_S24,raw_measurement,56.0,94,Numeric process measurement
-L1_S24_F867,0.0011264662308878408,-9.275495436906087e-05,L1,L1_S24,raw_measurement,83.0,95,Numeric process measurement
-line_count,0.001122014999683423,-9.207777745252301e-05,line_level,line_level,line_timing,6.0,96,Line-level timing signal
-L1_S24_F998,0.0011093124349803377,2.842538454768352e-05,L1,L1_S24,raw_measurement,31.0,97,Numeric process measurement
-L1_S24_F1303,0.001026707745362933,-0.0001885395615270191,L1,L1_S24,raw_measurement,11.0,98,Numeric process measurement
-L1_S24_F1207__is_missing,0.0010151491983690487,9.665758202659544e-05,L1,L1_S24,raw_measurement_missingness,3.0,99,Missingness / skipped measurement signal
-L1_S24_F1748,0.0009585665818592184,-0.00015157706074219054,L1,L1_S24,raw_measurement,28.0,100,Numeric process measurement
+feature,mean_abs_shap,mean_signed_shap,line,station,feature_family,model_importance,driver_rank,driver_type,feature_display_name,interpretation
+start_time,0.19696799831907538,-0.003909270293832812,timing,timing_level,timing,512.0,1,Derived temporal indicator,Earliest Measurement Timestamp,"Temporal production indicator; may proxy batch, routing, or latent process conditions."
+line_0_start_time,0.1144820564477132,0.010972401340375764,L0,line_level,line_timing,385.0,2,Line-level temporal indicator,Line 0 Earliest Measurement Timestamp,"Temporal production indicator; may proxy batch, routing, or latent process conditions."
+line_3_end_time,0.09472544395775677,-0.0039770028635833414,L3,line_level,line_timing,88.0,3,Line-level temporal indicator,Line 3 Latest Measurement Timestamp,"Temporal production indicator; may proxy batch, routing, or latent process conditions."
+line_3_start_time,0.08286576912916405,-0.02710344274411696,L3,line_level,line_timing,264.0,4,Line-level temporal indicator,Line 3 Earliest Measurement Timestamp,"Temporal production indicator; may proxy batch, routing, or latent process conditions."
+end_time,0.07627099903139474,0.012949280816973564,timing,timing_level,timing,474.0,5,Derived temporal indicator,Latest Measurement Timestamp,"Temporal production indicator; may proxy batch, routing, or latent process conditions."
+L3_S32_F3850__is_missing,0.06555429002091039,-0.015548728148805419,L3,L3_S32,raw_measurement_missingness,111.0,6,Missingness / skipped measurement signal,L3_S32_F3850__is_missing,Measurement-availability or routing indicator; not a direct physical cause.
+mean_waiting_time,0.04783857484770251,-0.020766203691638813,timing,timing_level,timing,875.0,7,Derived temporal indicator,Mean Inter-station Timestamp Gap,"Derived timestamp-gap feature; not verified physical processing, queue, or delay time."
+line_0_end_time,0.04612209113363654,-0.013111891733037454,L0,line_level,line_timing,184.0,8,Line-level temporal indicator,Line 0 Latest Measurement Timestamp,"Temporal production indicator; may proxy batch, routing, or latent process conditions."
+max_waiting_time,0.04382822662250216,0.017783485523900387,timing,timing_level,timing,772.0,9,Derived temporal indicator,Maximum Inter-station Timestamp Gap,"Derived timestamp-gap feature; not verified physical processing, queue, or delay time."
+cycle_time,0.04321061972291579,-0.0020511106495366264,timing,timing_level,timing,732.0,10,Derived temporal indicator,Observed Measurement Time Span,"Derived timestamp-gap feature; not verified physical processing, queue, or delay time."
+line_3_observed_date_values,0.03965662040567594,0.003055301056975864,L3,line_level,line_timing,134.0,11,Line-level temporal indicator,line_3_observed_date_values,Predictive association requiring process-record validation before causal interpretation.
+line_3_processing_duration,0.038698942642382814,0.0014423283769415692,L3,line_level,line_timing,723.0,12,Line-level temporal indicator,Line 3 Observed Measurement Time Span,"Derived timestamp-gap feature; not verified physical processing, queue, or delay time."
+waiting_time,0.03634315874696266,-0.011749977832158795,timing,timing_level,timing,314.0,13,Derived temporal indicator,Observed Inter-station Timestamp Gaps,"Derived timestamp-gap feature; not verified physical processing, queue, or delay time."
+line_3_station_count,0.02790840020407451,0.013907114409311317,L3,line_level,line_timing,130.0,14,Line-level temporal indicator,line_3_station_count,Predictive association requiring process-record validation before causal interpretation.
+line_0_processing_duration,0.026870847712835367,0.0005053241780507659,L0,line_level,line_timing,495.0,15,Line-level temporal indicator,Line 0 Observed Measurement Time Span,"Derived timestamp-gap feature; not verified physical processing, queue, or delay time."
+path_complexity_score,0.022786843076717248,0.019431471393663934,path,path_level,path_or_family,135.0,16,Manufacturing path signal,path_complexity_score,Predictive association requiring process-record validation before causal interpretation.
+line_2_start_time,0.022172595173950434,0.0007322776949727811,L2,line_level,line_timing,299.0,17,Line-level temporal indicator,Line 2 Earliest Measurement Timestamp,"Temporal production indicator; may proxy batch, routing, or latent process conditions."
+L1_S24_F1844,0.020868080926770765,-0.0010405407511225287,L1,L1_S24,raw_measurement,237.0,18,Numeric process measurement,L1_S24_F1844,Predictive association requiring process-record validation before causal interpretation.
+delay_ratio,0.02075982186752844,0.0011912892602786607,timing,timing_level,timing,406.0,19,Derived temporal indicator,Relative Timestamp-Gap Ratio,"Derived timestamp-gap feature; not verified physical processing, queue, or delay time."
+line_1_end_time,0.020270004985413287,-0.0017999417571425817,L1,line_level,line_timing,131.0,20,Line-level temporal indicator,Line 1 Latest Measurement Timestamp,"Temporal production indicator; may proxy batch, routing, or latent process conditions."
+L2_S27_F3144,0.020076850288554784,-0.0014935365482130975,L2,L2_S27,raw_measurement,330.0,21,Numeric process measurement,L2_S27_F3144,Predictive association requiring process-record validation before causal interpretation.
+station_count,0.018685627912254095,-0.015317043852953292,path,path_level,path_or_family,54.0,22,Manufacturing path signal,station_count,Predictive association requiring process-record validation before causal interpretation.
+line_1_start_time,0.017815220509408047,0.016745107233376504,L1,line_level,line_timing,174.0,23,Line-level temporal indicator,Line 1 Earliest Measurement Timestamp,"Temporal production indicator; may proxy batch, routing, or latent process conditions."
+L1_S24_F1846,0.017420639836852013,0.0007767782224382717,L1,L1_S24,raw_measurement,228.0,24,Numeric process measurement,L1_S24_F1846,Predictive association requiring process-record validation before causal interpretation.
+line_2_end_time,0.015876400066859635,0.0035404365209953763,L2,line_level,line_timing,89.0,25,Line-level temporal indicator,Line 2 Latest Measurement Timestamp,"Temporal production indicator; may proxy batch, routing, or latent process conditions."
+L1_S24_F1723,0.013796733938956984,0.0033632710435483283,L1,L1_S24,raw_measurement,109.0,26,Numeric process measurement,L1_S24_F1723,Predictive association requiring process-record validation before causal interpretation.
+observed_date_values,0.012950280865641164,0.0034814706645354375,other,other,categorical_or_other,195.0,27,Categorical or derived signal,observed_date_values,Predictive association requiring process-record validation before causal interpretation.
+kmeans_family,0.01266612018564661,-0.0015913493731764521,path,path_level,path_or_family,241.0,28,Manufacturing path signal,kmeans_family,Predictive association requiring process-record validation before causal interpretation.
+L1_S24_F1778,0.012306244881160762,0.001526147784627693,L1,L1_S24,raw_measurement,180.0,29,Numeric process measurement,L1_S24_F1778,Predictive association requiring process-record validation before causal interpretation.
+L1_S24_F1667,0.011677657117930047,-0.0014478824859488356,L1,L1_S24,raw_measurement,140.0,30,Numeric process measurement,L1_S24_F1667,Predictive association requiring process-record validation before causal interpretation.
+wait_event_count,0.010694178707590802,-0.0006772581244834348,other,other,categorical_or_other,206.0,31,Categorical or derived signal,wait_event_count,Predictive association requiring process-record validation before causal interpretation.
+L1_S24_F1498,0.010411870206603573,0.003003825957324523,L1,L1_S24,raw_measurement,150.0,32,Numeric process measurement,L1_S24_F1498,Predictive association requiring process-record validation before causal interpretation.
+processing_duration,0.01017103012302903,0.004206176521586622,timing,timing_level,timing,220.0,33,Derived temporal indicator,Observed Manufacturing Time Span,"Derived timestamp-gap feature; not verified physical processing, queue, or delay time."
+L1_S24_F1713,0.00902368727362332,0.0006166215853108845,L1,L1_S24,raw_measurement,84.0,34,Numeric process measurement,L1_S24_F1713,Predictive association requiring process-record validation before causal interpretation.
+line_3_date_completeness_pct,0.008684347766701178,-0.00015167340767917442,L3,line_level,line_timing,27.0,35,Line-level temporal indicator,line_3_date_completeness_pct,Predictive association requiring process-record validation before causal interpretation.
+L1_S24_F1842,0.008443756525367052,-0.0006890552550361957,L1,L1_S24,raw_measurement,115.0,36,Numeric process measurement,L1_S24_F1842,Predictive association requiring process-record validation before causal interpretation.
+L1_S24_F1758,0.008325255691303131,-0.0008062967897776808,L1,L1_S24,raw_measurement,157.0,37,Numeric process measurement,L1_S24_F1758,Predictive association requiring process-record validation before causal interpretation.
+L1_S24_F958,0.008039187728172418,0.00013416659647048364,L1,L1_S24,raw_measurement,77.0,38,Numeric process measurement,L1_S24_F958,Predictive association requiring process-record validation before causal interpretation.
+path_density,0.008021009239153517,0.0002908920559319544,path,path_level,path_or_family,74.0,39,Manufacturing path signal,path_density,Predictive association requiring process-record validation before causal interpretation.
+L1_S24_F1672,0.007512107266130241,-0.0014616695593647035,L1,L1_S24,raw_measurement,121.0,40,Numeric process measurement,L1_S24_F1672,Predictive association requiring process-record validation before causal interpretation.
+L1_S24_F1609,0.007409266191282727,-0.0006402325355749748,L1,L1_S24,raw_measurement,63.0,41,Numeric process measurement,L1_S24_F1609,Predictive association requiring process-record validation before causal interpretation.
+L1_S24_F1122,0.007310561039150914,-0.0011435113472235963,L1,L1_S24,raw_measurement,120.0,42,Numeric process measurement,L1_S24_F1122,Predictive association requiring process-record validation before causal interpretation.
+L3_S49_F4211,0.006772143353444298,0.0005815130190191873,L3,L3_S49,raw_measurement,187.0,43,Numeric process measurement,L3_S49_F4211,Predictive association requiring process-record validation before causal interpretation.
+L1_S24_F1490,0.006767802803274419,-0.00040254156626550705,L1,L1_S24,raw_measurement,44.0,44,Numeric process measurement,L1_S24_F1490,Predictive association requiring process-record validation before causal interpretation.
+L1_S24_F1002,0.006573938063480517,8.312852639902838e-05,L1,L1_S24,raw_measurement,70.0,45,Numeric process measurement,L1_S24_F1002,Predictive association requiring process-record validation before causal interpretation.
+L1_S24_F1176,0.006549645806693899,-0.0006038547641302644,L1,L1_S24,raw_measurement,76.0,46,Numeric process measurement,L1_S24_F1176,Predictive association requiring process-record validation before causal interpretation.
+line_1_processing_duration,0.0064843141203981105,-0.003219720923241591,L1,line_level,line_timing,77.0,47,Line-level temporal indicator,Line 1 Observed Measurement Time Span,"Derived timestamp-gap feature; not verified physical processing, queue, or delay time."
+hierarchical_family,0.006206404192755768,0.000793319921393203,path,path_level,path_or_family,139.0,48,Manufacturing path signal,hierarchical_family,Predictive association requiring process-record validation before causal interpretation.
+L1_S25_F2990,0.00574886256351007,-0.00040002654608357695,L1,L1_S25,raw_measurement,61.0,49,Numeric process measurement,L1_S25_F2990,Predictive association requiring process-record validation before causal interpretation.
+L1_S24_F1632,0.005653502237856295,0.0005105233895656798,L1,L1_S24,raw_measurement,99.0,50,Numeric process measurement,L1_S24_F1632,Predictive association requiring process-record validation before causal interpretation.
+L1_S24_F1174,0.005491342177549627,0.000534685902958335,L1,L1_S24,raw_measurement,56.0,51,Numeric process measurement,L1_S24_F1174,Predictive association requiring process-record validation before causal interpretation.
+L1_S24_F1718,0.005157007864544989,-0.0016967813899938374,L1,L1_S24,raw_measurement,109.0,52,Numeric process measurement,L1_S24_F1718,Predictive association requiring process-record validation before causal interpretation.
+L1_S24_F963,0.0051299653380983,0.0006432556663702138,L1,L1_S24,raw_measurement,61.0,53,Numeric process measurement,L1_S24_F963,Predictive association requiring process-record validation before causal interpretation.
+L1_S24_F1695,0.0050149831478891365,-0.001070451053172412,L1,L1_S24,raw_measurement,59.0,54,Numeric process measurement,L1_S24_F1695,Predictive association requiring process-record validation before causal interpretation.
+L1_S24_F1031,0.004989302825462793,-0.0001150990874604044,L1,L1_S24,raw_measurement,53.0,55,Numeric process measurement,L1_S24_F1031,Predictive association requiring process-record validation before causal interpretation.
+station_count_phase5,0.004763841898107043,-0.004587009931139961,path,path_level,path_or_family,4.0,56,Manufacturing path signal,station_count_phase5,Predictive association requiring process-record validation before causal interpretation.
+L1_S24_F1212,0.004662599283695862,5.804705263986406e-05,L1,L1_S24,raw_measurement,47.0,57,Numeric process measurement,L1_S24_F1212,Predictive association requiring process-record validation before causal interpretation.
+L1_S24_F1581,0.004331234534112421,0.0002585644529622526,L1,L1_S24,raw_measurement,92.0,58,Numeric process measurement,L1_S24_F1581,Predictive association requiring process-record validation before causal interpretation.
+L1_S25_F2237,0.00413588399551171,-0.00037267978537843855,L1,L1_S25,raw_measurement,128.0,59,Numeric process measurement,L1_S25_F2237,Predictive association requiring process-record validation before causal interpretation.
+L1_S24_F1814,0.0041005355109153705,0.00036911650131591576,L1,L1_S24,raw_measurement,152.0,60,Numeric process measurement,L1_S24_F1814,Predictive association requiring process-record validation before causal interpretation.
+L1_S25_F2960,0.004032862026160294,-0.0005920447793415468,L1,L1_S25,raw_measurement,47.0,61,Numeric process measurement,L1_S25_F2960,Predictive association requiring process-record validation before causal interpretation.
+L1_S25_F2915,0.003962120295277183,-0.0009306119239296649,L1,L1_S25,raw_measurement,117.0,62,Numeric process measurement,L1_S25_F2915,Predictive association requiring process-record validation before causal interpretation.
+L1_S24_F679,0.003912046661995458,-0.0008381279165932914,L1,L1_S24,raw_measurement,49.0,63,Numeric process measurement,L1_S24_F679,Predictive association requiring process-record validation before causal interpretation.
+L2_S28_F3248,0.0038312852437423685,0.00012626484756188868,L2,L2_S28,raw_measurement,66.0,64,Numeric process measurement,L2_S28_F3248,Predictive association requiring process-record validation before causal interpretation.
+date_completeness_pct,0.0038026097190978826,0.0005511180207598274,other,other,categorical_or_other,37.0,65,Categorical or derived signal,date_completeness_pct,Predictive association requiring process-record validation before causal interpretation.
+final_product_family,0.0036812177166375406,0.00038032535924394914,path,path_level,path_or_family,44.0,66,Manufacturing path signal,final_product_family,Predictive association requiring process-record validation before causal interpretation.
+L1_S24_F691,0.003584396693783575,-0.00018837657185673807,L1,L1_S24,raw_measurement,87.0,67,Numeric process measurement,L1_S24_F691,Predictive association requiring process-record validation before causal interpretation.
+L1_S24_F1102,0.0035083976996943974,-0.0007109148470681088,L1,L1_S24,raw_measurement,24.0,68,Numeric process measurement,L1_S24_F1102,Predictive association requiring process-record validation before causal interpretation.
+line_0_observed_date_values,0.003432632029803366,-0.0010540963140181453,L0,line_level,line_timing,23.0,69,Line-level temporal indicator,line_0_observed_date_values,Predictive association requiring process-record validation before causal interpretation.
+L2_S27_F3144__is_missing,0.0032398176127726957,0.0017881603858939327,L2,L2_S27,raw_measurement_missingness,27.0,70,Missingness / skipped measurement signal,L2_S27_F3144__is_missing,Measurement-availability or routing indicator; not a direct physical cause.
+L1_S24_F1604,0.003115585163477202,-3.2222681813979845e-05,L1,L1_S24,raw_measurement,53.0,71,Numeric process measurement,L1_S24_F1604,Predictive association requiring process-record validation before causal interpretation.
+L1_S24_F1166,0.0030572809559775995,-0.0004217370465663318,L1,L1_S24,raw_measurement,72.0,72,Numeric process measurement,L1_S24_F1166,Predictive association requiring process-record validation before causal interpretation.
+L1_S24_F1700,0.003031319302096957,-0.0007074665416113081,L1,L1_S24,raw_measurement,90.0,73,Numeric process measurement,L1_S24_F1700,Predictive association requiring process-record validation before causal interpretation.
+L1_S24_F1474,0.003001631230331149,0.00014346251938724552,L1,L1_S24,raw_measurement,31.0,74,Numeric process measurement,L1_S24_F1474,Predictive association requiring process-record validation before causal interpretation.
+L1_S24_F1126,0.002725373306533044,-0.0001134296138025418,L1,L1_S24,raw_measurement,106.0,75,Numeric process measurement,L1_S24_F1126,Predictive association requiring process-record validation before causal interpretation.
+L1_S24_F814,0.0026771928480819216,-0.0003942881885013785,L1,L1_S24,raw_measurement,38.0,76,Numeric process measurement,L1_S24_F814,Predictive association requiring process-record validation before causal interpretation.
+L1_S24_F1494,0.0025397049924527387,-0.00029411397835754025,L1,L1_S24,raw_measurement,65.0,77,Numeric process measurement,L1_S24_F1494,Predictive association requiring process-record validation before causal interpretation.
+L3_S32_F3850,0.002433225053189863,-0.00037259232040813637,L3,L3_S32,raw_measurement,49.0,78,Numeric process measurement,L3_S32_F3850,Predictive association requiring process-record validation before causal interpretation.
+L1_S24_F1004,0.002313781099064947,-0.00018804059810384788,L1,L1_S24,raw_measurement,59.0,79,Numeric process measurement,L1_S24_F1004,Predictive association requiring process-record validation before causal interpretation.
+line_1_observed_date_values,0.0022273023810197427,0.0009770744277416519,L1,line_level,line_timing,28.0,80,Line-level temporal indicator,line_1_observed_date_values,Predictive association requiring process-record validation before causal interpretation.
+L1_S24_F829,0.0021044993670466796,0.0003089995097903942,L1,L1_S24,raw_measurement,35.0,81,Numeric process measurement,L1_S24_F829,Predictive association requiring process-record validation before causal interpretation.
+station_span,0.0019040232944836802,-0.0002482074487099394,path,path_level,path_or_family,27.0,82,Manufacturing path signal,station_span,Predictive association requiring process-record validation before causal interpretation.
+L1_S24_F1657,0.0018604583743172549,0.0005470907442394776,L1,L1_S24,raw_measurement,30.0,83,Numeric process measurement,L1_S24_F1657,Predictive association requiring process-record validation before causal interpretation.
+L2_S28_F3292,0.00185741185998894,-0.00019342158369367365,L2,L2_S28,raw_measurement,18.0,84,Numeric process measurement,L2_S28_F3292,Predictive association requiring process-record validation before causal interpretation.
+first_station,0.0017183180386787583,0.00039664153543397026,path,path_level,path_or_family,8.0,85,Manufacturing path signal,first_station,Predictive association requiring process-record validation before causal interpretation.
+L1_S24_F902,0.0016374657085731802,-3.8213324001510776e-05,L1,L1_S24,raw_measurement,31.0,86,Numeric process measurement,L1_S24_F902,Predictive association requiring process-record validation before causal interpretation.
+L1_S24_F1627,0.001494313730036068,0.0001435824293051708,L1,L1_S24,raw_measurement,35.0,87,Numeric process measurement,L1_S24_F1627,Predictive association requiring process-record validation before causal interpretation.
+L1_S25_F2466,0.0014905911099975526,7.616522283686127e-05,L1,L1_S25,raw_measurement,44.0,88,Numeric process measurement,L1_S25_F2466,Predictive association requiring process-record validation before causal interpretation.
+L1_S25_F2886,0.0014296754391818095,0.0002817955161707384,L1,L1_S25,raw_measurement,50.0,89,Numeric process measurement,L1_S25_F2886,Predictive association requiring process-record validation before causal interpretation.
+L1_S24_F988,0.001416044702035941,-0.0002528435299438881,L1,L1_S24,raw_measurement,64.0,90,Numeric process measurement,L1_S24_F988,Predictive association requiring process-record validation before causal interpretation.
+L1_S25_F2464,0.0014076933015378687,-0.0003077394363791,L1,L1_S25,raw_measurement,15.0,91,Numeric process measurement,L1_S25_F2464,Predictive association requiring process-record validation before causal interpretation.
+L0_S10_F215__is_missing,0.001404531119633306,-7.84263225140182e-05,L0,L0_S10,raw_measurement_missingness,10.0,92,Missingness / skipped measurement signal,L0_S10_F215__is_missing,Measurement-availability or routing indicator; not a direct physical cause.
+L1_S24_F1622,0.0012608912011172625,9.364745218447601e-05,L1,L1_S24,raw_measurement,28.0,93,Numeric process measurement,L1_S24_F1622,Predictive association requiring process-record validation before causal interpretation.
+L1_S24_F1326,0.001221477219835758,-5.0931874412066914e-05,L1,L1_S24,raw_measurement,56.0,94,Numeric process measurement,L1_S24_F1326,Predictive association requiring process-record validation before causal interpretation.
+L1_S24_F867,0.0011264662308878408,-9.275495436906087e-05,L1,L1_S24,raw_measurement,83.0,95,Numeric process measurement,L1_S24_F867,Predictive association requiring process-record validation before causal interpretation.
+line_count,0.001122014999683423,-9.207777745252301e-05,line_level,line_level,line_timing,6.0,96,Line-level temporal indicator,line_count,Predictive association requiring process-record validation before causal interpretation.
+L1_S24_F998,0.0011093124349803377,2.842538454768352e-05,L1,L1_S24,raw_measurement,31.0,97,Numeric process measurement,L1_S24_F998,Predictive association requiring process-record validation before causal interpretation.
+L1_S24_F1303,0.001026707745362933,-0.0001885395615270191,L1,L1_S24,raw_measurement,11.0,98,Numeric process measurement,L1_S24_F1303,Predictive association requiring process-record validation before causal interpretation.
+L1_S24_F1207__is_missing,0.0010151491983690487,9.665758202659544e-05,L1,L1_S24,raw_measurement_missingness,3.0,99,Missingness / skipped measurement signal,L1_S24_F1207__is_missing,Measurement-availability or routing indicator; not a direct physical cause.
+L1_S24_F1748,0.0009585665818592184,-0.00015157706074219054,L1,L1_S24,raw_measurement,28.0,100,Numeric process measurement,L1_S24_F1748,Predictive association requiring process-record validation before causal interpretation.

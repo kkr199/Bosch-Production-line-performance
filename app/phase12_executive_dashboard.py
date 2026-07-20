@@ -220,8 +220,8 @@ def bottleneck_analytics(lines: list[str]) -> None:
 
 
 def shap_explanations() -> None:
-    st.subheader("Model Failure Drivers")
-    driver_count = st.slider("Drivers to display", 5, 20, 12)
+    st.subheader("Model Explainability & Predictive Signals")
+    driver_count = st.slider("Signals to display", 5, 20, 12)
     drivers = query(
         "SELECT * FROM failure_drivers ORDER BY driver_rank LIMIT ?",
         (driver_count,),
@@ -229,19 +229,19 @@ def shap_explanations() -> None:
     fig = px.bar(
         drivers.sort_values("mean_abs_shap"),
         x="mean_abs_shap",
-        y="feature",
+        y="feature_display_name" if "feature_display_name" in drivers.columns else "feature",
         orientation="h",
         color="driver_type",
-        labels={"mean_abs_shap": "Mean absolute SHAP", "feature": "Feature"},
-        title="Global drivers of production-safe model predictions",
+        labels={"mean_abs_shap": "Mean absolute SHAP", "feature_display_name": "Predictive signal"},
+        title="Global predictive signals of model output",
     )
     fig.update_layout(height=max(400, driver_count * 31), legend_title_text="Driver type")
     st.plotly_chart(fig, width="stretch")
 
     root_causes = query(
         """
-        SELECT station, total_mean_abs_shap, top_driver, top_driver_type,
-               recommended_action
+        SELECT station, total_mean_abs_shap, top_driver_display_name,
+               top_driver_interpretation, top_driver_type, recommended_action
         FROM station_root_causes
         WHERE station LIKE 'L%_S%'
         ORDER BY total_mean_abs_shap DESC
@@ -250,7 +250,7 @@ def shap_explanations() -> None:
     st.dataframe(root_causes, width="stretch", hide_index=True)
     st.caption(
         "SHAP explains the model's prediction behavior. Engineering evidence is required "
-        "before treating a driver as a confirmed physical root cause."
+        "before treating a predictive signal as a confirmed physical root cause. Timestamp-derived signals are relative measurement indicators, not verified delays."
     )
 
 

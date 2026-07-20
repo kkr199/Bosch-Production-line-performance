@@ -632,6 +632,10 @@ def write_report(
         "",
         metrics_report.to_markdown(index=False),
         "",
+        "## Evaluation Status",
+        "",
+        "This run uses a validation split for model selection. The Kaggle `test_*.csv` files are unlabelled scoring inputs, not a held-out evaluation set. Per `docs/data_strategy_and_test_set_policy.md`, these metrics are experimental and must not be presented as a final production-performance estimate until a physically isolated labelled holdout is evaluated exactly once.",
+        "",
         "## Selected Model",
         "",
         (
