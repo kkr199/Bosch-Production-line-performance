@@ -19,7 +19,7 @@ business impact.
 1. Executive overview and KPI scorecard.
 2. Failure trend across ordered relative production-time periods.
 3. Station heatmap by line and station.
-4. Bottleneck analytics using waiting time, failure rate, and bottleneck score.
+4. Bottleneck analytics using timestamp-gap proxies, failure rate, and bottleneck score.
 5. SHAP driver explanations from the production-safe Phase 6 model.
 6. Business-impact scenario using user-controlled costs and intervention effectiveness.
 
@@ -29,4 +29,6 @@ business impact.
 - Test predictions do not have known outcomes.
 - Business impact is a scenario, not realized savings.
 - SHAP values explain model behavior and do not prove physical causation.
+- Timestamp-derived features are relative measurement indicators, not verified
+  production delays, queue times, or official start/end times.
 - Throughput efficiency is a timestamp-derived proxy and is not OEE.

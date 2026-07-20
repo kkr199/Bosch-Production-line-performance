@@ -221,7 +221,7 @@ def _dashboard_answer() -> str:
     return (
         "The project has three Streamlit apps. The Manufacturing Copilot focuses on question answering and operational review. "
         "The Executive Dashboard focuses on KPIs, heatmaps, bottlenecks, SHAP drivers, and business impact. "
-        "The unified Project Dashboard combines the whole project: KPIs, model comparison, product families, process mining, root cause, "
+        "The unified Project Dashboard combines the whole project: KPIs, model comparison, product families, process mining, model explainability, "
         "knowledge graph, copilot, business impact, and deliverables.\n\n"
         "For a non-technical reviewer, the unified dashboard is the best starting point."
     )

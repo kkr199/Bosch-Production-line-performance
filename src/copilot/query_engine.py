@@ -205,6 +205,6 @@ def answer_question(connection: sqlite3.Connection, question: str) -> CopilotAns
     )
     narrative = (
         "Here is the reviewed production summary. Ask about failure rates, bottlenecks, "
-        "root causes, critical stations, process routes, or model validation for a focused answer."
+        "predictive signals, critical stations, process routes, or model validation for a focused answer."
     )
     return CopilotAnswer("Production performance summary", narrative, data, "summary")

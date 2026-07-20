@@ -290,7 +290,7 @@ def page_process_mining(lines: list[str]) -> None:
 
 
 def page_root_cause(lines: list[str]) -> None:
-    st.header("Root Cause Analysis")
+    st.header("Model Explainability & Failure Drivers")
     placeholders = ",".join("?" for _ in lines)
     drivers = query("SELECT * FROM failure_drivers ORDER BY driver_rank LIMIT 25")
     root = query(
@@ -302,16 +302,16 @@ def page_root_cause(lines: list[str]) -> None:
         """,
         tuple(lines),
     )
-    actions = query("SELECT * FROM engineer_actions ORDER BY root_cause_priority DESC")
+    actions = query("SELECT * FROM engineer_actions ORDER BY predictive_signal_priority DESC")
 
     fig = px.bar(
         drivers.head(15).sort_values("mean_abs_shap"),
         x="mean_abs_shap",
-        y="feature",
+        y="feature_display_name" if "feature_display_name" in drivers.columns else "feature",
         orientation="h",
         color="driver_type",
-        labels={"mean_abs_shap": "Mean |SHAP|", "feature": "Feature"},
-        title="Top global SHAP drivers",
+        labels={"mean_abs_shap": "Mean |SHAP|", "feature_display_name": "Predictive signal"},
+        title="Top global SHAP predictive signals",
     )
     fig.update_layout(height=520)
     st.plotly_chart(fig, width="stretch")
@@ -321,7 +321,7 @@ def page_root_cause(lines: list[str]) -> None:
     right.dataframe(actions, width="stretch", hide_index=True)
     st.warning(
         "SHAP explains model behavior. Engineering records are required before treating "
-        "a driver as a confirmed physical root cause."
+        "a predictive signal as a confirmed physical root cause. Timestamp-derived signals are relative, anonymized measurement indicators—not verified delays."
     )
 
 
@@ -529,7 +529,7 @@ def main() -> None:
             "Prediction Model",
             "Product Families",
             "Process Mining",
-            "Root Cause",
+            "Explainability",
             "Knowledge Graph",
             "Copilot",
             "Business Impact",
@@ -545,7 +545,7 @@ def main() -> None:
         page_product_families()
     elif page == "Process Mining":
         page_process_mining(lines)
-    elif page == "Root Cause":
+    elif page == "Explainability":
         page_root_cause(lines)
     elif page == "Knowledge Graph":
         page_knowledge_graph(lines)

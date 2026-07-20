@@ -145,7 +145,7 @@ def risk_monitor() -> None:
 
 
 def root_causes() -> None:
-    st.subheader("Root Cause and Engineering Actions")
+    st.subheader("Model Explainability and Engineering Actions")
     stations = query(
         """
         SELECT DISTINCT station FROM station_root_causes
@@ -185,7 +185,7 @@ def root_causes() -> None:
         st.dataframe(root, width="stretch", hide_index=True)
         st.warning(
             "Model explanations identify associations worth investigating. Confirm sensor, "
-            "maintenance, quality, and process records before declaring a physical root cause."
+            "maintenance, quality, and process records before declaring a physical root cause. Timestamp-derived features are temporal indicators, not verified delays."
         )
 
     drivers = query(
@@ -280,7 +280,7 @@ def main() -> None:
         st.stop()
 
     tabs = st.tabs(
-        ["Overview", "Risk Monitor", "Root Causes", "Process Intelligence", "Copilot"]
+        ["Overview", "Risk Monitor", "Explainability", "Process Intelligence", "Copilot"]
     )
     with tabs[0]:
         overview()

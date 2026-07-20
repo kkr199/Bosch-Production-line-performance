@@ -29,6 +29,30 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
 
+## Industry-grade ML controls
+
+The project now includes governance artifacts aligned to the reference
+guidelines. Read these before treating any experimental metric as a production
+claim:
+
+- `docs/problem_definition_charter.md` — intended decision, success measures,
+  release gates, and open business sign-offs.
+- `docs/data_strategy_and_test_set_policy.md` — source inventory, isolation
+  rule, and leakage controls.
+- `docs/model_card.md` — intended use, limitations, evaluation requirements,
+  and ownership.
+- `docs/monitoring_and_retraining_plan.md` — drift, operational alerts,
+  promotion gate, and rollback process.
+- `docs/industry_grade_alignment_audit.md` — phase-by-phase evidence, gaps,
+  and the next production-readiness gate.
+
+`src/utils/ml_governance.py` supplies reusable split-manifest and PSI drift
+utilities. Validate these controls with:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest tests\test_ml_governance.py
+```
+
 ## Run Phase 1 Data Checks
 
 ```powershell
@@ -95,7 +119,7 @@ Phase 3 outputs:
 
 ## Phase 4 Notebook
 
-Open this notebook for raw-date feature engineering of timing, delay, station-count, path-complexity, and line-level aggregate features:
+Open this notebook for date-derived temporal indicators, station-count, path-complexity, and line-level aggregate features. The timestamps are anonymized relative measurement times; they are not verified physical delays or official production start/end times:
 
 - `notebooks/phase4_feature_engineering.ipynb`
 
@@ -191,7 +215,7 @@ Leaderboard boost outputs:
 
 ## Phase 7 Notebook
 
-Open this notebook for production-safe root cause analysis, SHAP explanations, station-level reports, and recommended engineering actions:
+Open this notebook for model explainability and failure-driver analysis, SHAP explanations, station-level reports, and recommended engineering actions. SHAP findings are predictive associations, not confirmed physical root causes:
 
 - `notebooks/phase7_root_cause_analysis.ipynb`
 

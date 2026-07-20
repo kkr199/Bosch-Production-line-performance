@@ -1,4 +1,4 @@
-"""Phase 7 root cause analysis using the production-safe Phase 6 model."""
+"""Phase 7 model explainability and failure-driver analysis for the Phase 6 model."""
 
 from __future__ import annotations
 
@@ -22,6 +22,43 @@ RANDOM_STATE = 42
 SHAP_SAMPLE_ROWS = 8_000
 LOCAL_EXPLANATION_ROWS = 1_000
 FEATURE_RE = re.compile(r"^(?P<line>L\d+)_(?P<station>S\d+)_F(?P<feature>\d+)")
+
+
+def feature_display_name(feature: str) -> str:
+    """Return a defensible reader-facing label without changing model feature keys."""
+    labels = {
+        "start_time": "Earliest Measurement Timestamp",
+        "end_time": "Latest Measurement Timestamp",
+        "cycle_time": "Observed Measurement Time Span",
+        "processing_duration": "Observed Manufacturing Time Span",
+        "waiting_time": "Observed Inter-station Timestamp Gaps",
+        "mean_waiting_time": "Mean Inter-station Timestamp Gap",
+        "max_waiting_time": "Maximum Inter-station Timestamp Gap",
+        "delay_ratio": "Relative Timestamp-Gap Ratio",
+    }
+    if feature in labels:
+        return labels[feature]
+    line_match = re.fullmatch(r"line_(\d+)_(start_time|end_time|processing_duration)", feature)
+    if line_match:
+        line, measure = line_match.groups()
+        measure_label = {
+            "start_time": "Earliest Measurement Timestamp",
+            "end_time": "Latest Measurement Timestamp",
+            "processing_duration": "Observed Measurement Time Span",
+        }[measure]
+        return f"Line {line} {measure_label}"
+    return feature
+
+
+def feature_interpretation(feature: str) -> str:
+    """Describe predictive evidence without inferring a physical cause."""
+    if feature in {"start_time", "end_time"} or re.fullmatch(r"line_\d+_(start_time|end_time)", feature):
+        return "Temporal production indicator; may proxy batch, routing, or latent process conditions."
+    if feature in {"cycle_time", "processing_duration", "waiting_time", "mean_waiting_time", "max_waiting_time", "delay_ratio"} or feature.endswith("processing_duration"):
+        return "Derived timestamp-gap feature; not verified physical processing, queue, or delay time."
+    if feature.endswith("__is_missing"):
+        return "Measurement-availability or routing indicator; not a direct physical cause."
+    return "Predictive association requiring process-record validation before causal interpretation."
 
 
 def load_phase6_assets() -> tuple[dict, pd.DataFrame, pd.DataFrame]:
@@ -127,7 +164,7 @@ def calculate_shap_explanations(estimator, x_sample: pd.DataFrame) -> tuple[pd.D
     plt.figure(figsize=(10, 8))
     plt.barh(top["feature"], top["mean_abs_shap"])
     plt.xlabel("Mean absolute SHAP value")
-    plt.title("Top SHAP Failure Drivers")
+    plt.title("Top SHAP Predictive Signals")
     plt.tight_layout()
     plt.savefig(FIGURES_DIR / "phase7_top_shap_drivers.png", dpi=160, bbox_inches="tight")
     plt.close()
@@ -152,13 +189,15 @@ def identify_top_failure_drivers(importance: pd.DataFrame, shap_report: pd.DataF
         ],
         [
             "Missingness / skipped measurement signal",
-            "Line-level timing signal",
-            "Timing or delay signal",
+            "Line-level temporal indicator",
+            "Derived temporal indicator",
             "Manufacturing path signal",
             "Numeric process measurement",
         ],
         default="Categorical or derived signal",
     )
+    merged["feature_display_name"] = merged["feature"].map(feature_display_name)
+    merged["interpretation"] = merged["feature"].map(feature_interpretation)
     merged.head(100).to_csv(REPORTS_DIR / "phase7_top_failure_drivers.csv", index=False)
     return merged
 
@@ -167,12 +206,12 @@ def station_recommendation(station: str, rows: pd.DataFrame) -> str:
     features = " ".join(rows["feature"].head(8).tolist()).lower()
     if station in {"path_level", "timing_level", "line_level", "other"}:
         if "time" in features or "duration" in features or "waiting" in features:
-            return "Review cycle-time, waiting-time, and queue behavior for products following this path."
+            return "Treat this as a temporal association; compare product families, routes, and production windows before station-specific action."
         return "Use this as a cross-station signal; compare affected product families and paths before station-specific action."
     if "missing" in features:
         return "Check whether skipped measurements, sensor dropouts, or alternate routing through this station align with failures."
     if "time" in features or "duration" in features:
-        return "Inspect station timing, queue buildup, operator handoff, and maintenance intervals for unusual delays."
+        return "Compare production windows, routing, and maintenance records; the timestamp feature is not proof of a physical delay."
     return "Review measurement distributions, tooling condition, calibration records, and recent process changes for this station."
 
 
@@ -193,6 +232,8 @@ def build_station_root_cause_reports(drivers: pd.DataFrame, validation: pd.DataF
         station_recommendation(station, drivers[drivers["station"] == station])
         for station in station_rows["station"]
     ]
+    station_rows["top_driver_display_name"] = station_rows["top_driver"].map(feature_display_name)
+    station_rows["top_driver_interpretation"] = station_rows["top_driver"].map(feature_interpretation)
     station_rows.to_csv(REPORTS_DIR / "phase7_station_root_cause_report.csv", index=False)
 
     failure_rate = validation["Response"].mean()
@@ -201,13 +242,14 @@ def build_station_root_cause_reports(drivers: pd.DataFrame, validation: pd.DataF
         summary_rows.append(
             {
                 "station": station,
-                "root_cause_priority": float(group["total_mean_abs_shap"].sum()),
+                "predictive_signal_priority": float(group["total_mean_abs_shap"].sum()),
                 "primary_driver": group.iloc[0]["top_driver"],
+                "primary_driver_display_name": group.iloc[0]["top_driver_display_name"],
                 "recommended_action": group.iloc[0]["recommended_action"],
                 "validation_failure_rate_pct": failure_rate * 100,
             }
         )
-    pd.DataFrame(summary_rows).sort_values("root_cause_priority", ascending=False).to_csv(
+    pd.DataFrame(summary_rows).sort_values("predictive_signal_priority", ascending=False).to_csv(
         REPORTS_DIR / "phase7_engineer_action_plan.csv", index=False
     )
     return station_rows
@@ -224,7 +266,7 @@ def write_report(
     top_driver = drivers.iloc[0]
     top_station = station_report.iloc[0]
     lines = [
-        "# Phase 7: Root Cause Analysis",
+        "# Phase 7: Model Explainability & Failure Drivers",
         "",
         "## Model Used",
         "",
@@ -236,31 +278,32 @@ def write_report(
         f"- Validation failure rate: {validation['Response'].mean() * 100:.3f}%",
         f"- SHAP sample size: {min(SHAP_SAMPLE_ROWS, len(validation)):,}",
         "",
-        "## Top Failure Driver",
+        "## Top Predictive Signal",
         "",
-        f"The strongest global SHAP driver is `{top_driver['feature']}` with mean absolute SHAP {top_driver['mean_abs_shap']:.6f}.",
+        f"The strongest global SHAP predictive signal is `{top_driver['feature_display_name']}` (`{top_driver['feature']}`) with mean absolute SHAP {top_driver['mean_abs_shap']:.6f}.",
+        f"Interpretation: {top_driver['interpretation']}",
         "",
-        "## Top Station / Root-Cause Area",
+        "## Top Station / Predictive-Signal Area",
         "",
-        f"The highest-priority root-cause area is `{top_station['station']}`, led by `{top_station['top_driver']}`.",
+        f"The highest-priority predictive-signal area is `{top_station['station']}`, led by `{top_station['top_driver_display_name']}`.",
         "",
-        "## Top 15 Failure Drivers",
+        "## Top 15 Predictive Signals",
         "",
         drivers.head(15)[
-            ["driver_rank", "feature", "station", "driver_type", "mean_abs_shap", "mean_signed_shap"]
+            ["driver_rank", "feature_display_name", "feature", "station", "driver_type", "interpretation", "mean_abs_shap", "mean_signed_shap"]
         ].to_markdown(index=False),
         "",
-        "## Top 15 Station-Level Root Cause Priorities",
+        "## Top 15 Station-Level Predictive-Signal Priorities",
         "",
         station_report.head(15)[
-            ["line", "station", "feature_family", "total_mean_abs_shap", "top_driver", "recommended_action"]
+            ["line", "station", "feature_family", "total_mean_abs_shap", "top_driver_display_name", "top_driver_interpretation", "recommended_action"]
         ].to_markdown(index=False),
         "",
         "## Recommended Engineering Actions",
         "",
         "- Prioritize stations and path-level drivers with the largest total SHAP contribution.",
         "- For missingness drivers, check sensor availability, skipped operations, routing differences, and whether missing measurements represent a known process branch.",
-        "- For timing drivers, inspect queue buildup, station waiting time, cycle-time drift, and recent maintenance windows.",
+        "- For timestamp-derived drivers, compare production windows, routes, sensor availability, and maintenance records; do not label them as verified delays or physical causes.",
         "- For raw numeric drivers, review calibration, tooling condition, process limits, and distribution shifts for the named station measurements.",
         "- For path or product-family drivers, compare high-risk product routes against lower-risk routes and confirm whether routing policy or product mix explains the pattern.",
         "",
