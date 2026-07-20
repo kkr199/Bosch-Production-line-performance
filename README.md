@@ -7,8 +7,7 @@ Phase 1 sets up a reproducible Python project for the Kaggle Bosch Production Li
 ```text
 .
 +-- data/
-|   +-- raw/          # Optional location for original Kaggle CSVs
-|   +-- processed/    # Derived files, samples, and model-ready extracts
+|   +-- database/     # Database for streamlit app
 +-- docs/             # Project documentation
 +-- models/           # Trained model artifacts
 +-- notebooks/        # Python notebooks for project phases
