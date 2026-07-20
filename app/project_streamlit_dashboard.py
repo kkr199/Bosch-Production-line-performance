@@ -302,7 +302,20 @@ def page_root_cause(lines: list[str]) -> None:
         """,
         tuple(lines),
     )
-    actions = query("SELECT * FROM engineer_actions ORDER BY predictive_signal_priority DESC")
+    actions = query("SELECT * FROM engineer_actions")
+    # Streamlit Cloud can retain the prior SQLite artifact briefly after a code
+    # deployment. Support both the legacy and current action-plan schemas so the
+    # page remains available while that artifact refreshes.
+    action_priority = next(
+        (
+            column
+            for column in ("predictive_signal_priority", "root_cause_priority")
+            if column in actions.columns
+        ),
+        None,
+    )
+    if action_priority:
+        actions = actions.sort_values(action_priority, ascending=False)
 
     fig = px.bar(
         drivers.head(15).sort_values("mean_abs_shap"),
