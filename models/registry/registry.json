@@ -1,0 +1,13 @@
+{
+  "registry_version": 1,
+  "models": [
+    {
+      "version": "phase6-best-v1",
+      "status": "production",
+      "artifact_path": "models/phase6_best_model.joblib",
+      "artifact_sha256": "e46733d644b63ba863fb4044322649e30ae0d63e6d6e348b6f6df77c048688b0",
+      "training_run": "phase6_predictive_failure_modeling",
+      "validation_status": "experimental: labelled holdout required before factory use"
+    }
+  ]
+}
