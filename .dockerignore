@@ -1,0 +1,10 @@
+.git
+.venv
+.github-sync-staging
+__pycache__
+*.pyc
+data/processed
+data/raw
+notebooks
+catboost_info
+reports/figures

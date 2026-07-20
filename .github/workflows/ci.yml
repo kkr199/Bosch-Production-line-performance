@@ -1,0 +1,21 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - name: Install locked dependencies
+        run: pip install -r requirements.lock
+      - name: Compile application and serving modules
+        run: python -m py_compile app/project_streamlit_dashboard.py src/serving/model_service.py src/serving/api.py
+      - name: Run automated tests
+        run: python -m unittest discover -s tests -p "test_*.py"

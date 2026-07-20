@@ -53,6 +53,21 @@ utilities. Validate these controls with:
 .\.venv\Scripts\python.exe -m unittest tests\test_ml_governance.py
 ```
 
+## Local production-serving controls
+
+The project includes an exact dependency lock (`requirements.lock`), Docker
+image (`Dockerfile`), CI workflow, protected FastAPI prediction endpoint, model
+registry, structured SQLite audit logging, and a golden prediction set.
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -s tests -p "test_*.py"
+$env:BOSCH_API_KEY = "replace-with-a-long-random-secret"
+.\.venv\Scripts\python.exe -m uvicorn src.serving.api:app --port 8000
+```
+
+See `docs/production_operations_guide.md` for container, input-contract,
+promotion, and rollback instructions.
+
 ## Run Phase 1 Data Checks
 
 ```powershell
