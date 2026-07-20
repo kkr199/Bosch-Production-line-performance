@@ -6,19 +6,20 @@ Phase 1 sets up a reproducible Python project for the Kaggle Bosch Production Li
 
 ```text
 .
++-- app/              # Streamlit Dashboard 
 +-- data/
 |   +-- database/     # Database for streamlit app
-+-- docs/             # Project documentation
 +-- models/           # Trained model artifacts
 +-- notebooks/        # Python notebooks for project phases
 +-- reports/          # Generated reports and data quality outputs
 +-- src/              # Reusable Python source code
++-- .gitignore
++-- Bosch_Manufacturing_project_Roadmap
 +-- requirements.txt
 ```
 
 The Kaggle CSV files are currently in the project root. The Phase 1 profiling script checks both the project root and `data/raw/`, so the files do not need to be moved.
 
-`sample_submission.csv` is not used for Phase 1 analysis or model training. It is only a Kaggle submission-format reference file.
 
 ## Environment Setup
 
