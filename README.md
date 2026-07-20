@@ -18,7 +18,7 @@ Phase 1 sets up a reproducible Python project for the Kaggle Bosch Production Li
 +-- requirements.txt
 ```
 
-The Kaggle CSV files are currently in the project root. The Phase 1 profiling script checks both the project root and `data/raw/`, so the files do not need to be moved.
+The Kaggle CSV files are currently in the project root. The Phase 1 profiling script checks both the project root and `data/raw/`, so the files do not need to be moved. 
 
 
 ## Environment Setup
