@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sqlite3
 import sys
 from pathlib import Path
@@ -69,6 +70,37 @@ def pct(value: float, digits: int = 2) -> str:
 
 def money(value: float) -> str:
     return f"${value:,.0f}"
+
+
+def feature_display_name(feature: str) -> str:
+    """Translate stored model keys into reader-facing labels for the dashboard."""
+    labels = {
+        "start_time": "Earliest Measurement Timestamp",
+        "end_time": "Latest Measurement Timestamp",
+        "cycle_time": "Observed Measurement Span",
+        "processing_duration": "Observed Active Measurement Span",
+        "waiting_time": "Observed Measurement Gap",
+        "mean_waiting_time": "Mean Measurement Gap",
+        "max_waiting_time": "Maximum Measurement Gap",
+        "wait_event_count": "Measurement-Gap Event Count",
+        "delay_ratio": "Relative Measurement-Gap Ratio",
+        "observed_date_values": "Observed Measurement Timestamps",
+        "station_count": "Stations with Recorded Measurements",
+    }
+    if feature in labels:
+        return labels[feature]
+
+    line_feature = re.fullmatch(r"line_(\d+)_(.+)", feature)
+    if line_feature:
+        line, suffix = line_feature.groups()
+        return f"Line {line}: {labels.get(suffix, suffix.replace('_', ' ').title())}"
+
+    station_feature = re.fullmatch(r"(L\d+_S\d+)_F(\d+)(?:__(is_missing))?", feature)
+    if station_feature:
+        station, feature_number, missing = station_feature.groups()
+        suffix = " Missing-Measurement Indicator" if missing else " Measurement"
+        return f"{station} Feature {feature_number}{suffix}"
+    return feature
 
 
 def line_filter() -> list[str]:
@@ -317,10 +349,13 @@ def page_root_cause(lines: list[str]) -> None:
     if action_priority:
         actions = actions.sort_values(action_priority, ascending=False)
 
+    if "feature_display_name" not in drivers.columns:
+        drivers = drivers.assign(feature_display_name=drivers["feature"].map(feature_display_name))
+
     fig = px.bar(
         drivers.head(15).sort_values("mean_abs_shap"),
         x="mean_abs_shap",
-        y="feature_display_name" if "feature_display_name" in drivers.columns else "feature",
+        y="feature_display_name",
         orientation="h",
         color="driver_type",
         labels={"mean_abs_shap": "Mean |SHAP|", "feature_display_name": "Predictive signal"},
