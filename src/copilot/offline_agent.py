@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import json
 import re
 import sqlite3
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 
 import pandas as pd
@@ -15,6 +17,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 REPORTS_DIR = PROJECT_ROOT / "reports"
 DOCS_DIR = PROJECT_ROOT / "docs" / "final_deliverables"
+HANDBOOK_CORPUS_PATH = PROJECT_ROOT / "docs" / "handbook" / "bosch_handbook_corpus.json"
 DATABASE_PATH = PROJECT_ROOT / "data" / "database" / "manufacturing_copilot.db"
 
 
@@ -23,6 +26,7 @@ class EvidenceSnippet:
     source: str
     text: str
     score: float
+    section: str = ""
 
 
 @dataclass
@@ -75,8 +79,31 @@ def _safe_frame(path: Path, rows: int = 8) -> str:
     return frame.to_string(index=False)
 
 
+@lru_cache(maxsize=1)
+def _handbook_chunks() -> tuple[dict[str, str], ...]:
+    """Load the generated handbook corpus once per application process."""
+    if not HANDBOOK_CORPUS_PATH.exists():
+        return ()
+    try:
+        records = json.loads(HANDBOOK_CORPUS_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return ()
+    return tuple(
+        {
+            "source": str(record.get("source", "Bosch Handbook")),
+            "heading": str(record.get("heading", "")),
+            "text": str(record.get("text", "")),
+        }
+        for record in records
+        if str(record.get("text", "")).strip()
+    )
+
+
 def build_knowledge_chunks() -> list[dict[str, str]]:
-    chunks: list[dict[str, str]] = []
+    # Handbook guidance is deliberately loaded first: it is the project's
+    # primary explanatory reference, while reports and tables supply project
+    # specific metrics and evidence.
+    chunks: list[dict[str, str]] = list(_handbook_chunks())
     for name in REPORT_FILES:
         chunks.extend(_chunk_text(_read_text(REPORTS_DIR / name), f"reports/{name}"))
 
@@ -98,24 +125,55 @@ def build_knowledge_chunks() -> list[dict[str, str]]:
     return chunks
 
 
-def retrieve_evidence(question: str, top_k: int = 5) -> list[EvidenceSnippet]:
+@lru_cache(maxsize=1)
+def _knowledge_index() -> tuple[tuple[dict[str, str], ...], TfidfVectorizer, object]:
+    """Create the retrieval index once, rather than rebuilding it per question."""
     chunks = build_knowledge_chunks()
     if not chunks:
-        return []
-    documents = [chunk["text"] for chunk in chunks]
+        return (), TfidfVectorizer(), None
+    # Source and heading terms make section-level retrieval more precise (for
+    # example, an XAI query should prefer the Explainable AI handbook part).
+    documents = [f"{chunk['source']} {chunk.get('heading', '')} {chunk['text']}" for chunk in chunks]
     vectorizer = TfidfVectorizer(stop_words="english", ngram_range=(1, 2), max_features=12000)
-    matrix = vectorizer.fit_transform(documents + [question])
-    scores = cosine_similarity(matrix[-1], matrix[:-1]).ravel()
+    return tuple(chunks), vectorizer, vectorizer.fit_transform(documents)
+
+
+def retrieve_evidence(question: str, top_k: int = 5) -> list[EvidenceSnippet]:
+    chunks, vectorizer, matrix = _knowledge_index()
+    if not chunks or matrix is None:
+        return []
+    scores = cosine_similarity(vectorizer.transform([question]), matrix).ravel()
     top_indices = scores.argsort()[::-1][:top_k]
     return [
         EvidenceSnippet(
             source=chunks[index]["source"],
             text=chunks[index]["text"],
             score=float(scores[index]),
+            section=chunks[index].get("heading", ""),
         )
         for index in top_indices
         if scores[index] > 0
     ]
+
+
+def _is_handbook_source(source: str) -> bool:
+    return source.startswith("Bosch Handbook")
+
+
+def handbook_answer(evidence: list[EvidenceSnippet]) -> str:
+    """Return a concise, evidence-only explanation from the project handbook."""
+    excerpts = []
+    for snippet in evidence[:3]:
+        text = snippet.text
+        if len(text) > 500:
+            text = text[:500].rsplit(" ", 1)[0] + "..."
+        label = f"**{snippet.section}** — " if snippet.section else ""
+        excerpts.append(f"- {label}{text}")
+    return (
+        "Based on the Bosch Production Line Performance Handbook, here is the relevant guidance:\n\n"
+        + "\n".join(excerpts)
+        + "\n\nFor current project metrics, use the linked project evidence and dashboard tables below."
+    )
 
 
 def _project_metrics() -> dict[str, object]:
@@ -279,11 +337,15 @@ def retrieval_answer(question: str, evidence: list[EvidenceSnippet]) -> str:
 
 
 def answer_project_question(question: str) -> AgentResponse:
-    answer, topic = curated_answer(question)
-    evidence = retrieve_evidence(question, top_k=5)
-    if answer is None:
-        answer = retrieval_answer(question, evidence)
+    evidence = retrieve_evidence(question, top_k=7)
+    handbook_evidence = [snippet for snippet in evidence if _is_handbook_source(snippet.source)]
+    if handbook_evidence and handbook_evidence[0].score >= 0.06:
+        answer = handbook_answer(handbook_evidence)
+        topic = "handbook_guidance"
     else:
-        if evidence:
+        answer, topic = curated_answer(question)
+        if answer is None:
+            answer = retrieval_answer(question, evidence)
+        elif evidence:
             answer += "\n\nSupporting project evidence is listed below."
     return AgentResponse(answer=answer, evidence=evidence, topic=topic)

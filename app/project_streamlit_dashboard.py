@@ -420,9 +420,10 @@ def page_knowledge_graph(lines: list[str]) -> None:
 
 
 def page_copilot() -> None:
-    st.header("Offline Project Q&A Agent")
+    st.header("Handbook-backed Offline Project Q&A Agent")
     st.caption(
-        "Ask any project question in plain English. This uses local reports, tables, and curated project explainers. "
+        "Ask any project question in plain English. The Bosch Project Handbook is the primary source for explanatory answers; "
+        "local reports and tables provide project-specific evidence. "
         "No API key or external AI service is required."
     )
     examples = [
@@ -438,7 +439,7 @@ def page_copilot() -> None:
     question = st.text_area("Ask a question", value=selected, height=110)
     c1, c2 = st.columns([1, 4])
     ask = c1.button("Ask Agent", type="primary")
-    c2.caption("Best for non-technical explanations, project decisions, model interpretation, families, bottlenecks, and deliverables.")
+    c2.caption("Best for handbook guidance, non-technical explanations, model interpretation, process intelligence, and production-readiness questions.")
 
     if ask:
         response = answer_project_question(question)
@@ -450,6 +451,7 @@ def page_copilot() -> None:
             evidence_rows = [
                 {
                     "source": item.source,
+                    "section": item.section,
                     "match_score": round(item.score, 3),
                     "evidence": item.text[:900] + ("..." if len(item.text) > 900 else ""),
                 }
