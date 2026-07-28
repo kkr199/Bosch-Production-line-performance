@@ -427,7 +427,7 @@ def page_copilot() -> None:
         "No API key or external AI service is required."
     )
     st.caption(
-        "https://github.com/kkr199/Bosch-Production-line-performance/tree/main/Bosch_Handbook"
+    "[BOSCH_Handbook](https://github.com/kkr199/Bosch-Production-line-performance/tree/main/Bosch_Handbook)"
     )
     examples = [
         "Explain the 8 product families in a non technical way.",
