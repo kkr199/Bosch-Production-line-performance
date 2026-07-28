@@ -100,6 +100,20 @@ def _content_as_text(content: object) -> str:
     return str(content).strip()
 
 
+def _safe_gemini_error(error: Exception) -> str:
+    """Translate provider failures without exposing request details or secrets."""
+    detail = str(error).lower()
+    if "401" in detail or "unauthenticated" in detail or "api_key_invalid" in detail:
+        return "Gemini rejected the API key. Create a new key in Google AI Studio and replace GEMINI_API_KEY in Streamlit Secrets."
+    if "403" in detail or "permission_denied" in detail or "forbidden" in detail:
+        return "This Gemini API key does not have access to the selected model or API project. Check Gemini API access and billing."
+    if "404" in detail or "not_found" in detail:
+        return "The selected Gemini model is unavailable for this API project. Set GEMINI_MODEL to a model available to your key."
+    if "429" in detail or "resource_exhausted" in detail or "quota" in detail:
+        return "Gemini quota is currently unavailable or rate-limited. Check the Google AI Studio project quota and billing, then retry."
+    return "Gemini could not answer this question. Check the API key, selected model, and Gemini quota."
+
+
 def answer_handbook_question(question: str, *, api_key: str, model: str, retriever) -> HandbookAnswer:
     """Retrieve handbook evidence with LangChain and answer with Gemini only."""
     if not question.strip():
@@ -139,6 +153,4 @@ def answer_handbook_question(question: str, *, api_key: str, model: str, retriev
     except HandbookCopilotError:
         raise
     except Exception as error:
-        raise HandbookCopilotError(
-            "Gemini could not answer this question. Check the API key, selected model, and Gemini quota."
-        ) from error
+        raise HandbookCopilotError(_safe_gemini_error(error)) from error
