@@ -442,6 +442,9 @@ def page_copilot() -> None:
     question = st.text_area("Ask a question", value=selected, height=110)
     c1, c2 = st.columns([1, 4])
     ask = c1.button("Ask Agent", type="primary")
+    st.caption(
+    "[BOSCH_Handbook](https://github.com/kkr199/Bosch-Production-line-performance/tree/main/Bosch_Handbook)"
+    )
     c2.caption("Best for handbook guidance, non-technical explanations, model interpretation, process intelligence, and production-readiness questions.")
 
     if ask:
