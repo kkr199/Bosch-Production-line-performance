@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib
 import json
 import os
 import re
@@ -18,13 +19,14 @@ import streamlit as st
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.copilot.langchain_handbook import (  # noqa: E402
-    HandbookCopilotError,
-    answer_handbook_question,
-    build_retriever,
-)
+from src.copilot import langchain_handbook  # noqa: E402
 from src.copilot.query_engine import answer_question, read_sql  # noqa: E402
 from src.dashboard.business_impact import calculate_business_impact  # noqa: E402
+
+
+# Streamlit reruns the entrypoint in a long-lived Python process. Reload this
+# project module so a dashboard update cannot call an older retriever signature.
+langchain_handbook = importlib.reload(langchain_handbook)
 
 
 DATABASE_PATH = PROJECT_ROOT / "data" / "database" / "manufacturing_copilot.db"
@@ -93,7 +95,7 @@ def get_gemini_configuration() -> tuple[str | None, str]:
 @st.cache_resource(show_spinner=False)
 def get_handbook_retriever():
     """Build the LangChain handbook index once per application process."""
-    return build_retriever()
+    return langchain_handbook.build_retriever()
 
 
 def feature_display_name(feature: str) -> str:
@@ -478,13 +480,13 @@ def page_copilot() -> None:
         try:
             with st.spinner("Searching the handbook and drafting an answer..."):
                 retriever = get_handbook_retriever()
-                response = answer_handbook_question(
+                response = langchain_handbook.answer_handbook_question(
                     question,
                     api_key=api_key,
                     model=model,
                     retriever=retriever,
                 )
-        except HandbookCopilotError as error:
+        except langchain_handbook.HandbookCopilotError as error:
             st.error(str(error))
             return
 
