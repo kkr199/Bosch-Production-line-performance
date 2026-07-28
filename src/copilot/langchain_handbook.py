@@ -9,16 +9,12 @@ from pathlib import Path
 
 from langchain_core.documents import Document
 from langchain_core.messages import HumanMessage, SystemMessage
-from langchain_core.vectorstores import InMemoryVectorStore
-from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 HANDBOOK_DIR_NAMES = ("Bosch_Handbook_md", "Bosch_Handbook_MD")
-EMBEDDING_MODEL = "models/gemini-embedding-001"
-
-
 class HandbookCopilotError(RuntimeError):
     """A safe, user-facing error for an unavailable LangChain/Gemini request."""
 
@@ -28,6 +24,31 @@ class HandbookAnswer:
     answer: str
     sources: list[Document]
     model: str
+
+
+@dataclass(frozen=True)
+class HandbookRetriever:
+    """Small in-memory lexical retriever for LangChain document chunks.
+
+    It deliberately avoids a second Gemini embeddings API request. This keeps
+    the only external model call focused on Gemini chat generation, while
+    LangChain continues to manage the documents, chunking, and prompt flow.
+    """
+
+    documents: tuple[Document, ...]
+
+    def invoke(self, question: str) -> list[Document]:
+        query_terms = set(re.findall(r"[a-z0-9]{3,}", question.lower()))
+        scored: list[tuple[int, int, Document]] = []
+        for index, document in enumerate(self.documents):
+            text = document.page_content.lower()
+            score = sum(text.count(term) for term in query_terms)
+            if score:
+                scored.append((score, -index, document))
+        if not scored:
+            return list(self.documents[:6])
+        scored.sort(reverse=True)
+        return [document for _, _, document in scored[:6]]
 
 
 def _handbook_dir() -> Path:
@@ -63,24 +84,9 @@ def handbook_documents() -> tuple[Document, ...]:
     return tuple(splitter.split_documents(source_documents))
 
 
-def build_retriever(api_key: str):
-    """Create an in-memory, per-process LangChain vector index.
-
-    Handbook chunks are embedded for retrieval. The index is held only in the
-    running application process; it is not stored in the API key or committed
-    to the repository.
-    """
-    try:
-        embeddings = GoogleGenerativeAIEmbeddings(model=EMBEDDING_MODEL, api_key=api_key)
-        store = InMemoryVectorStore(embedding=embeddings)
-        store.add_documents(list(handbook_documents()))
-        return store.as_retriever(search_kwargs={"k": 6})
-    except HandbookCopilotError:
-        raise
-    except Exception as error:
-        raise HandbookCopilotError(
-            "Gemini could not build the handbook search index. Check the API key, Gemini API access, and quota."
-        ) from error
+def build_retriever() -> HandbookRetriever:
+    """Create the local LangChain handbook retriever without an embeddings call."""
+    return HandbookRetriever(documents=handbook_documents())
 
 
 def _content_as_text(content: object) -> str:

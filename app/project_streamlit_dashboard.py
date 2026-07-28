@@ -91,9 +91,9 @@ def get_gemini_configuration() -> tuple[str | None, str]:
 
 
 @st.cache_resource(show_spinner=False)
-def get_handbook_retriever(api_key: str):
-    """Build the LangChain handbook index once per active API key."""
-    return build_retriever(api_key)
+def get_handbook_retriever():
+    """Build the LangChain handbook index once per application process."""
+    return build_retriever()
 
 
 def feature_display_name(feature: str) -> str:
@@ -477,7 +477,7 @@ def page_copilot() -> None:
             return
         try:
             with st.spinner("Searching the handbook and drafting an answer..."):
-                retriever = get_handbook_retriever(api_key)
+                retriever = get_handbook_retriever()
                 response = answer_handbook_question(
                     question,
                     api_key=api_key,
