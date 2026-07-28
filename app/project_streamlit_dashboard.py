@@ -18,8 +18,12 @@ import streamlit as st
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
+from src.copilot.langchain_handbook import (  # noqa: E402
+    HandbookCopilotError,
+    answer_handbook_question,
+    build_retriever,
+)
 from src.copilot.query_engine import answer_question, read_sql  # noqa: E402
-from src.copilot.offline_agent import answer_project_question  # noqa: E402
 from src.dashboard.business_impact import calculate_business_impact  # noqa: E402
 
 
@@ -82,8 +86,14 @@ def get_gemini_configuration() -> tuple[str | None, str]:
         secret_key = None
         secret_model = None
     api_key = str(secret_key or os.getenv("GEMINI_API_KEY") or "").strip() or None
-    model = str(secret_model or os.getenv("GEMINI_MODEL") or "gemini-2.0-flash").strip()
+    model = str(secret_model or os.getenv("GEMINI_MODEL") or "gemini-2.5-flash").strip()
     return api_key, model
+
+
+@st.cache_resource(show_spinner=False)
+def get_handbook_retriever(api_key: str):
+    """Build the LangChain handbook index once per active API key."""
+    return build_retriever(api_key)
 
 
 def feature_display_name(feature: str) -> str:
@@ -434,10 +444,10 @@ def page_knowledge_graph(lines: list[str]) -> None:
 
 
 def page_copilot() -> None:
-    st.header("Handbook-grounded Project Copilot")
+    st.header("Gemini Handbook Copilot")
     st.caption(
-        "Ask any project question in plain English. The Markdown Bosch Project Handbook is the primary source; "
-        "local reports and tables provide project-specific evidence. Every answer shows the excerpts used."
+        "Ask any project question in plain English. LangChain retrieves relevant Bosch handbook excerpts and Gemini "
+        "writes the answer with numbered references."
     )
     examples = [
         "Explain the 8 product families in a non technical way.",
@@ -462,37 +472,34 @@ def page_copilot() -> None:
 
     if ask:
         api_key, model = get_gemini_configuration()
-        with st.spinner("Retrieving relevant handbook references..."):
-            try:
-                response = answer_project_question(
+        if not api_key:
+            st.error("Add GEMINI_API_KEY in Streamlit Secrets, then reboot the app.")
+            return
+        try:
+            with st.spinner("Searching the handbook and drafting an answer..."):
+                retriever = get_handbook_retriever(api_key)
+                response = answer_handbook_question(
                     question,
-                    gemini_api_key=api_key,
-                    gemini_model=model,
+                    api_key=api_key,
+                    model=model,
+                    retriever=retriever,
                 )
-            except Exception:
-                # A managed runtime must never lose the whole dashboard because
-                # an optional AI provider or retrieval dependency misbehaves.
-                st.warning(
-                    "The Copilot is temporarily unavailable. The rest of the dashboard remains available; "
-                    "please retry in a moment or use the relevant project dashboard page."
-                )
-                return
+        except HandbookCopilotError as error:
+            st.error(str(error))
+            return
+
         st.subheader("Answer")
         st.markdown(response.answer)
-        st.caption(f"Answer mode: {response.provider}")
-        if response.notice:
-            st.info(response.notice)
-        if response.evidence:
+        st.caption(f"Model: {response.model} | LangChain in-memory handbook retrieval")
+        if response.sources:
             st.subheader("References used")
             evidence_rows = [
                 {
                     "reference": f"[{index}]",
-                    "source": item.source,
-                    "section": item.section,
-                    "match_score": round(item.score, 3),
-                    "evidence": item.text[:900] + ("..." if len(item.text) > 900 else ""),
+                    "source": item.metadata.get("source", "Bosch handbook"),
+                    "evidence": item.page_content[:900] + ("..." if len(item.page_content) > 900 else ""),
                 }
-                for index, item in enumerate(response.evidence, start=1)
+                for index, item in enumerate(response.sources, start=1)
             ]
             st.dataframe(pd.DataFrame(evidence_rows), width="stretch", hide_index=True)
 
