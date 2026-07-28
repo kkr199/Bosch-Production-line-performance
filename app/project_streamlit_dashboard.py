@@ -19,7 +19,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.copilot.query_engine import answer_question, read_sql  # noqa: E402
-from src.copilot.offline_agent import answer_project_question  # noqa: E402
+from src.copilot.offline_agent import AgentResponse, answer_project_question  # noqa: E402
 from src.dashboard.business_impact import calculate_business_impact  # noqa: E402
 
 
@@ -463,11 +463,25 @@ def page_copilot() -> None:
     if ask:
         api_key, model = get_gemini_configuration()
         with st.spinner("Retrieving relevant handbook references..."):
-            response = answer_project_question(
-                question,
-                gemini_api_key=api_key,
-                gemini_model=model,
-            )
+            try:
+                response = answer_project_question(
+                    question,
+                    gemini_api_key=api_key,
+                    gemini_model=model,
+                )
+            except Exception:
+                # A managed runtime must never lose the whole dashboard because
+                # an optional AI provider or retrieval dependency misbehaves.
+                response = AgentResponse(
+                    answer=(
+                        "The Copilot is temporarily unavailable, but the rest of the dashboard remains available. "
+                        "Please retry in a moment or use the project dashboard pages for the relevant evidence."
+                    ),
+                    evidence=[],
+                    topic="copilot_safe_fallback",
+                    provider="Local Copilot fallback",
+                    notice="The configured AI service could not complete this request.",
+                )
         st.subheader("Answer")
         st.markdown(response.answer)
         st.caption(f"Answer mode: {response.provider}")
