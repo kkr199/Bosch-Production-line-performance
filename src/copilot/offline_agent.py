@@ -263,7 +263,10 @@ Reference excerpts:
         parts = candidates[0].get("content", {}).get("parts", []) if candidates else []
         answer = "".join(str(part.get("text", "")) for part in parts).strip()
         return answer or None
-    except (HTTPError, URLError, OSError, ValueError, KeyError, IndexError):
+    # Provider libraries and Streamlit's managed runtime can also raise a
+    # TypeError while normalising an HTTP response. The Copilot must keep its
+    # local, cited handbook fallback available in every such case.
+    except (HTTPError, URLError, OSError, ValueError, KeyError, IndexError, TypeError):
         return None
 
 
