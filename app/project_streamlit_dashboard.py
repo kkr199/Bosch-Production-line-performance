@@ -426,9 +426,7 @@ def page_copilot() -> None:
         "local reports and tables provide project-specific evidence. "
         "No API key or external AI service is required."
     )
-    st.caption(
-    "[BOSCH_Handbook](https://github.com/kkr199/Bosch-Production-line-performance/tree/main/Bosch_Handbook)"
-    )
+    
     examples = [
         "Explain the 8 product families in a non technical way.",
         "Why did we choose LightGBM as the production failure model?",
