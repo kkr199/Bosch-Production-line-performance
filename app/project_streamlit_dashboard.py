@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import importlib
 import json
 import re
 import sqlite3
@@ -18,14 +17,9 @@ import streamlit as st
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.copilot import langchain_handbook  # noqa: E402
 from src.copilot.query_engine import answer_question, read_sql  # noqa: E402
+from src.copilot.offline_agent import answer_project_question  # noqa: E402
 from src.dashboard.business_impact import calculate_business_impact  # noqa: E402
-
-
-# Streamlit reruns the entrypoint in a long-lived Python process. Reload this
-# project module so a dashboard update cannot call an older retriever signature.
-langchain_handbook = importlib.reload(langchain_handbook)
 
 
 DATABASE_PATH = PROJECT_ROOT / "data" / "database" / "manufacturing_copilot.db"
@@ -76,12 +70,6 @@ def pct(value: float, digits: int = 2) -> str:
 
 def money(value: float) -> str:
     return f"${value:,.0f}"
-
-
-@st.cache_resource(show_spinner=False)
-def get_handbook_retriever():
-    """Build the local Ollama handbook index once per application process."""
-    return langchain_handbook.build_retriever()
 
 
 def feature_display_name(feature: str) -> str:
@@ -432,10 +420,11 @@ def page_knowledge_graph(lines: list[str]) -> None:
 
 
 def page_copilot() -> None:
-    st.header("Local Handbook Copilot")
+    st.header("Handbook-backed Offline Project Q&A Agent")
     st.caption(
-        "Runs locally on this computer: LangChain retrieves Bosch handbook excerpts and Ollama writes the answer. "
-        "No cloud AI API key is used."
+        "Ask any project question in plain English. The Bosch Project Handbook is the primary source for explanatory answers; "
+        "local reports and tables provide project-specific evidence. "
+        "No API key or external AI service is required."
     )
     examples = [
         "Explain the 8 product families in a non technical way.",
@@ -450,38 +439,23 @@ def page_copilot() -> None:
     question = st.text_area("Ask a question", value=selected, height=110)
     c1, c2 = st.columns([1, 4])
     ask = c1.button("Ask Agent", type="primary")
-    st.caption(
-        "[Bosch Handbook sources](https://github.com/kkr199/Bosch-Production-line-performance/tree/main/Bosch_Handbook_md)"
-    )
-    c2.caption(
-        "Best for handbook guidance, non-technical explanations, model interpretation, "
-        "process intelligence, and production-readiness questions."
-    )
+    c2.caption("Best for handbook guidance, non-technical explanations, model interpretation, process intelligence, and production-readiness questions.")
 
     if ask:
-        try:
-            with st.spinner("Searching the local handbook and drafting an answer..."):
-                retriever = get_handbook_retriever()
-                response = langchain_handbook.answer_handbook_question(
-                    question,
-                    retriever=retriever,
-                )
-        except langchain_handbook.HandbookCopilotError as error:
-            st.error(str(error))
-            return
-
+        response = answer_project_question(question)
         st.subheader("Answer")
         st.markdown(response.answer)
-        st.caption(f"Local model: {response.model} | LangChain in-memory handbook retrieval")
-        if response.sources:
-            st.subheader("References used")
+        st.caption(f"Offline topic route: {response.topic}")
+        if response.evidence:
+            st.subheader("Supporting Evidence")
             evidence_rows = [
                 {
-                    "reference": f"[{index}]",
-                    "source": item.metadata.get("source", "Bosch handbook"),
-                    "evidence": item.page_content[:900] + ("..." if len(item.page_content) > 900 else ""),
+                    "source": item.source,
+                    "section": item.section,
+                    "match_score": round(item.score, 3),
+                    "evidence": item.text[:900] + ("..." if len(item.text) > 900 else ""),
                 }
-                for index, item in enumerate(response.sources, start=1)
+                for item in response.evidence
             ]
             st.dataframe(pd.DataFrame(evidence_rows), width="stretch", hide_index=True)
 
