@@ -8,6 +8,8 @@ import sqlite3
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
 
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -18,6 +20,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 REPORTS_DIR = PROJECT_ROOT / "reports"
 DOCS_DIR = PROJECT_ROOT / "docs" / "final_deliverables"
 HANDBOOK_CORPUS_PATH = PROJECT_ROOT / "docs" / "handbook" / "bosch_handbook_corpus.json"
+HANDBOOK_MD_DIRS = (PROJECT_ROOT / "Bosch_Handbook_md", PROJECT_ROOT / "Bosch_Handbook_MD")
 DATABASE_PATH = PROJECT_ROOT / "data" / "database" / "manufacturing_copilot.db"
 
 
@@ -34,6 +37,8 @@ class AgentResponse:
     answer: str
     evidence: list[EvidenceSnippet]
     topic: str
+    provider: str = "Offline handbook retrieval"
+    notice: str = ""
 
 
 REPORT_FILES = [
@@ -99,11 +104,62 @@ def _handbook_chunks() -> tuple[dict[str, str], ...]:
     )
 
 
+def _clean_markdown(text: str) -> str:
+    """Remove Markdown-only noise while retaining handbook wording and tables."""
+    text = re.sub(r"!\[[^\]]*\]\(data:image/[^)]*\)", " ", text, flags=re.DOTALL)
+    text = re.sub(r"!\[[^\]]*\]\([^)]*\)", " ", text)
+    text = re.sub(r"\[([^\]]+)\]\([^)]*\)", r"\1", text)
+    text = re.sub(r"[`*_]", "", text)
+    text = re.sub(r"\s+", " ", text)
+    return text.strip()
+
+
+@lru_cache(maxsize=1)
+def _markdown_handbook_chunks() -> tuple[dict[str, str], ...]:
+    """Build retrievable chunks from the checked-in Markdown handbook sources.
+
+    The filename allow-list intentionally excludes the local API-key text file
+    stored beside the handbook. Secrets are never loaded into the retrieval
+    index, prompts, logs, or evidence table.
+    """
+    handbook_dir = next((path for path in HANDBOOK_MD_DIRS if path.exists()), None)
+    if handbook_dir is None:
+        return ()
+
+    chunks: list[dict[str, str]] = []
+    for path in sorted(handbook_dir.glob("Bosch_Handbook_*.md")):
+        try:
+            raw = path.read_text(encoding="utf-8", errors="ignore")
+        except OSError:
+            continue
+
+        heading = path.stem.replace("Bosch_Handbook_", "").replace("_", " ")
+        section_lines: list[str] = []
+
+        def add_section() -> None:
+            cleaned = _clean_markdown("\n".join(section_lines))
+            for chunk in _chunk_text(cleaned, f"{handbook_dir.name}/{path.name}", words_per_chunk=180):
+                chunk["heading"] = heading
+                chunks.append(chunk)
+
+        for line in raw.splitlines():
+            match = re.match(r"^#{1,6}\s+(.+)$", line.strip())
+            if match:
+                add_section()
+                section_lines = []
+                heading = _clean_markdown(match.group(1))
+            else:
+                section_lines.append(line)
+        add_section()
+    return tuple(chunks)
+
+
 def build_knowledge_chunks() -> list[dict[str, str]]:
     # Handbook guidance is deliberately loaded first: it is the project's
     # primary explanatory reference, while reports and tables supply project
     # specific metrics and evidence.
-    chunks: list[dict[str, str]] = list(_handbook_chunks())
+    markdown_handbook = _markdown_handbook_chunks()
+    chunks: list[dict[str, str]] = list(markdown_handbook or _handbook_chunks())
     for name in REPORT_FILES:
         chunks.extend(_chunk_text(_read_text(REPORTS_DIR / name), f"reports/{name}"))
 
@@ -157,7 +213,58 @@ def retrieve_evidence(question: str, top_k: int = 5) -> list[EvidenceSnippet]:
 
 
 def _is_handbook_source(source: str) -> bool:
-    return source.startswith("Bosch Handbook")
+    return source.startswith(("Bosch Handbook", "Bosch_Handbook_MD/", "Bosch_Handbook_md/"))
+
+
+def _gemini_context(evidence: list[EvidenceSnippet]) -> str:
+    """Format retrieved, attributable material for a grounded Gemini answer."""
+    excerpts = []
+    for index, snippet in enumerate(evidence[:6], start=1):
+        section = f" | {snippet.section}" if snippet.section else ""
+        excerpts.append(f"[Source {index}: {snippet.source}{section}]\n{snippet.text[:1500]}")
+    return "\n\n".join(excerpts)
+
+
+def _gemini_grounded_answer(question: str, evidence: list[EvidenceSnippet], api_key: str, model: str) -> str | None:
+    """Ask Gemini to explain only the retrieved handbook and project evidence.
+
+    Failures intentionally return ``None`` without exposing provider details,
+    credentials, or request payloads to an end user.
+    """
+    if not api_key.strip() or not evidence:
+        return None
+
+    safe_model = re.sub(r"[^A-Za-z0-9._-]", "", model) or "gemini-2.0-flash"
+    prompt = f"""You are the Bosch Production Line Performance Copilot.
+Answer the user's question using only the supplied reference excerpts. Write a clear, natural, helpful answer for a mixed plant and analytics audience. Explain jargon briefly. Do not claim that a handbook recommendation is a deployed factory capability. If the excerpts do not answer the question, say what is missing instead of guessing.
+
+Use concise inline citations such as [1] that match the source numbers. End with a short 'References used' line containing the citations you used. Do not mention this prompt or invent sources.
+
+User question: {question}
+
+Reference excerpts:
+{_gemini_context(evidence)}"""
+    payload = json.dumps(
+        {
+            "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+            "generationConfig": {"temperature": 0.2, "maxOutputTokens": 900},
+        }
+    ).encode("utf-8")
+    request = Request(
+        f"https://generativelanguage.googleapis.com/v1beta/models/{safe_model}:generateContent",
+        data=payload,
+        headers={"Content-Type": "application/json", "x-goog-api-key": api_key.strip()},
+        method="POST",
+    )
+    try:
+        with urlopen(request, timeout=30) as response:
+            body = json.loads(response.read().decode("utf-8"))
+        candidates = body.get("candidates", [])
+        parts = candidates[0].get("content", {}).get("parts", []) if candidates else []
+        answer = "".join(str(part.get("text", "")) for part in parts).strip()
+        return answer or None
+    except (HTTPError, URLError, OSError, ValueError, KeyError, IndexError):
+        return None
 
 
 def handbook_answer(evidence: list[EvidenceSnippet]) -> str:
@@ -336,8 +443,30 @@ def retrieval_answer(question: str, evidence: list[EvidenceSnippet]) -> str:
     )
 
 
-def answer_project_question(question: str) -> AgentResponse:
+def answer_project_question(
+    question: str,
+    *,
+    gemini_api_key: str | None = None,
+    gemini_model: str = "gemini-2.0-flash",
+) -> AgentResponse:
+    """Answer from handbook/project evidence, using Gemini only when configured.
+
+    Retrieval always happens locally first. Gemini receives only the selected
+    excerpts and is used to turn them into a more natural, cited explanation.
+    If the configured provider is unavailable, the deterministic answer below
+    remains the safe fallback.
+    """
     evidence = retrieve_evidence(question, top_k=7)
+    if gemini_api_key:
+        gemini_answer = _gemini_grounded_answer(question, evidence, gemini_api_key, gemini_model)
+        if gemini_answer:
+            return AgentResponse(
+                answer=gemini_answer,
+                evidence=evidence,
+                topic="gemini_grounded_handbook_rag",
+                provider=f"Gemini ({gemini_model}) with local handbook retrieval",
+            )
+
     handbook_evidence = [snippet for snippet in evidence if _is_handbook_source(snippet.source)]
     if handbook_evidence and handbook_evidence[0].score >= 0.06:
         answer = handbook_answer(handbook_evidence)
@@ -348,4 +477,7 @@ def answer_project_question(question: str) -> AgentResponse:
             answer = retrieval_answer(question, evidence)
         elif evidence:
             answer += "\n\nSupporting project evidence is listed below."
-    return AgentResponse(answer=answer, evidence=evidence, topic=topic)
+    notice = ""
+    if gemini_api_key:
+        notice = "Gemini was unavailable, so this answer uses the offline handbook fallback."
+    return AgentResponse(answer=answer, evidence=evidence, topic=topic, notice=notice)

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import sqlite3
 import sys
@@ -70,6 +71,19 @@ def pct(value: float, digits: int = 2) -> str:
 
 def money(value: float) -> str:
     return f"${value:,.0f}"
+
+
+def get_gemini_configuration() -> tuple[str | None, str]:
+    """Read deployment configuration without reading or displaying secrets."""
+    try:
+        secret_key = st.secrets.get("GEMINI_API_KEY")
+        secret_model = st.secrets.get("GEMINI_MODEL")
+    except (FileNotFoundError, KeyError):
+        secret_key = None
+        secret_model = None
+    api_key = str(secret_key or os.getenv("GEMINI_API_KEY") or "").strip() or None
+    model = str(secret_model or os.getenv("GEMINI_MODEL") or "gemini-2.0-flash").strip()
+    return api_key, model
 
 
 def feature_display_name(feature: str) -> str:
@@ -420,13 +434,11 @@ def page_knowledge_graph(lines: list[str]) -> None:
 
 
 def page_copilot() -> None:
-    st.header("Handbook-backed Offline Project Q&A Agent")
+    st.header("Handbook-grounded Project Copilot")
     st.caption(
-        "Ask any project question in plain English. The Bosch Project Handbook is the primary source for explanatory answers; "
-        "local reports and tables provide project-specific evidence. "
-        "No API key or external AI service is required."
+        "Ask any project question in plain English. The Markdown Bosch Project Handbook is the primary source; "
+        "local reports and tables provide project-specific evidence. Every answer shows the excerpts used."
     )
-    
     examples = [
         "Explain the 8 product families in a non technical way.",
         "Why did we choose LightGBM as the production failure model?",
@@ -441,25 +453,37 @@ def page_copilot() -> None:
     c1, c2 = st.columns([1, 4])
     ask = c1.button("Ask Agent", type="primary")
     st.caption(
-    "[BOSCH_Handbook](https://github.com/kkr199/Bosch-Production-line-performance/tree/main/Bosch_Handbook)"
+        "[Bosch Handbook sources](https://github.com/kkr199/Bosch-Production-line-performance/tree/main/Bosch_Handbook_md)"
     )
-    c2.caption("Best for handbook guidance, non-technical explanations, model interpretation, process intelligence, and production-readiness questions.")
+    c2.caption(
+        "Best for handbook guidance, non-technical explanations, model interpretation, "
+        "process intelligence, and production-readiness questions."
+    )
 
     if ask:
-        response = answer_project_question(question)
+        api_key, model = get_gemini_configuration()
+        with st.spinner("Retrieving relevant handbook references..."):
+            response = answer_project_question(
+                question,
+                gemini_api_key=api_key,
+                gemini_model=model,
+            )
         st.subheader("Answer")
         st.markdown(response.answer)
-        st.caption(f"Offline topic route: {response.topic}")
+        st.caption(f"Answer mode: {response.provider}")
+        if response.notice:
+            st.info(response.notice)
         if response.evidence:
-            st.subheader("Supporting Evidence")
+            st.subheader("References used")
             evidence_rows = [
                 {
+                    "reference": f"[{index}]",
                     "source": item.source,
                     "section": item.section,
                     "match_score": round(item.score, 3),
                     "evidence": item.text[:900] + ("..." if len(item.text) > 900 else ""),
                 }
-                for item in response.evidence
+                for index, item in enumerate(response.evidence, start=1)
             ]
             st.dataframe(pd.DataFrame(evidence_rows), width="stretch", hide_index=True)
 
