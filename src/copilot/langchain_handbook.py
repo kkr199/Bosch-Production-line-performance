@@ -46,9 +46,9 @@ class HandbookRetriever:
             if score:
                 scored.append((score, -index, document))
         if not scored:
-            return list(self.documents[:6])
+            return list(self.documents[:4])
         scored.sort(reverse=True)
-        return [document for _, _, document in scored[:6]]
+        return [document for _, _, document in scored[:4]]
 
 
 def _handbook_dir() -> Path:
@@ -131,8 +131,10 @@ def answer_handbook_question(question: str, *, api_key: str, model: str, retriev
             model=model,
             api_key=api_key,
             temperature=0.2,
-            max_tokens=900,
-            retries=2,
+            max_tokens=600,
+            # Free-tier Gemini 2.5 Flash allows only 5 requests per minute.
+            # One question must make one provider request, not retry three times.
+            retries=0,
         )
         response = llm.invoke(
             [
