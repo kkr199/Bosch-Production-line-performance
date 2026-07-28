@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import importlib
 import json
-import os
 import re
 import sqlite3
 import sys
@@ -79,22 +78,9 @@ def money(value: float) -> str:
     return f"${value:,.0f}"
 
 
-def get_gemini_configuration() -> tuple[str | None, str]:
-    """Read deployment configuration without reading or displaying secrets."""
-    try:
-        secret_key = st.secrets.get("GEMINI_API_KEY")
-        secret_model = st.secrets.get("GEMINI_MODEL")
-    except (FileNotFoundError, KeyError):
-        secret_key = None
-        secret_model = None
-    api_key = str(secret_key or os.getenv("GEMINI_API_KEY") or "").strip() or None
-    model = str(secret_model or os.getenv("GEMINI_MODEL") or "gemini-2.5-flash").strip()
-    return api_key, model
-
-
 @st.cache_resource(show_spinner=False)
 def get_handbook_retriever():
-    """Build the LangChain handbook index once per application process."""
+    """Build the local Ollama handbook index once per application process."""
     return langchain_handbook.build_retriever()
 
 
@@ -446,10 +432,10 @@ def page_knowledge_graph(lines: list[str]) -> None:
 
 
 def page_copilot() -> None:
-    st.header("Gemini Handbook Copilot")
+    st.header("Local Handbook Copilot")
     st.caption(
-        "Ask any project question in plain English. LangChain retrieves relevant Bosch handbook excerpts and Gemini "
-        "writes the answer with numbered references."
+        "Runs locally on this computer: LangChain retrieves Bosch handbook excerpts and Ollama writes the answer. "
+        "No cloud AI API key is used."
     )
     examples = [
         "Explain the 8 product families in a non technical way.",
@@ -473,17 +459,11 @@ def page_copilot() -> None:
     )
 
     if ask:
-        api_key, model = get_gemini_configuration()
-        if not api_key:
-            st.error("Add GEMINI_API_KEY in Streamlit Secrets, then reboot the app.")
-            return
         try:
-            with st.spinner("Searching the handbook and drafting an answer..."):
+            with st.spinner("Searching the local handbook and drafting an answer..."):
                 retriever = get_handbook_retriever()
                 response = langchain_handbook.answer_handbook_question(
                     question,
-                    api_key=api_key,
-                    model=model,
                     retriever=retriever,
                 )
         except langchain_handbook.HandbookCopilotError as error:
@@ -492,7 +472,7 @@ def page_copilot() -> None:
 
         st.subheader("Answer")
         st.markdown(response.answer)
-        st.caption(f"Model: {response.model} | LangChain in-memory handbook retrieval")
+        st.caption(f"Local model: {response.model} | LangChain in-memory handbook retrieval")
         if response.sources:
             st.subheader("References used")
             evidence_rows = [

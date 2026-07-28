@@ -9,14 +9,19 @@ from pathlib import Path
 
 from langchain_core.documents import Document
 from langchain_core.messages import HumanMessage, SystemMessage
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_core.vectorstores import InMemoryVectorStore
+from langchain_ollama import ChatOllama, OllamaEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 HANDBOOK_DIR_NAMES = ("Bosch_Handbook_md", "Bosch_Handbook_MD")
+LOCAL_CHAT_MODEL = "llama3.2:1b"
+LOCAL_EMBEDDING_MODEL = "nomic-embed-text"
+
+
 class HandbookCopilotError(RuntimeError):
-    """A safe, user-facing error for an unavailable LangChain/Gemini request."""
+    """A safe, user-facing error for an unavailable local Copilot request."""
 
 
 @dataclass(frozen=True)
@@ -24,31 +29,6 @@ class HandbookAnswer:
     answer: str
     sources: list[Document]
     model: str
-
-
-@dataclass(frozen=True)
-class HandbookRetriever:
-    """Small in-memory lexical retriever for LangChain document chunks.
-
-    It deliberately avoids a second Gemini embeddings API request. This keeps
-    the only external model call focused on Gemini chat generation, while
-    LangChain continues to manage the documents, chunking, and prompt flow.
-    """
-
-    documents: tuple[Document, ...]
-
-    def invoke(self, question: str) -> list[Document]:
-        query_terms = set(re.findall(r"[a-z0-9]{3,}", question.lower()))
-        scored: list[tuple[int, int, Document]] = []
-        for index, document in enumerate(self.documents):
-            text = document.page_content.lower()
-            score = sum(text.count(term) for term in query_terms)
-            if score:
-                scored.append((score, -index, document))
-        if not scored:
-            return list(self.documents[:4])
-        scored.sort(reverse=True)
-        return [document for _, _, document in scored[:4]]
 
 
 def _handbook_dir() -> Path:
@@ -84,9 +64,17 @@ def handbook_documents() -> tuple[Document, ...]:
     return tuple(splitter.split_documents(source_documents))
 
 
-def build_retriever() -> HandbookRetriever:
-    """Create the local LangChain handbook retriever without an embeddings call."""
-    return HandbookRetriever(documents=handbook_documents())
+def build_retriever():
+    """Create a fully local LangChain vector index through Ollama embeddings."""
+    try:
+        embeddings = OllamaEmbeddings(model=LOCAL_EMBEDDING_MODEL)
+        store = InMemoryVectorStore(embedding=embeddings)
+        store.add_documents(list(handbook_documents()))
+        return store.as_retriever(search_kwargs={"k": 4})
+    except Exception as error:
+        raise HandbookCopilotError(
+            "Ollama is not ready. Install Ollama, then run `ollama pull nomic-embed-text` and try again."
+        ) from error
 
 
 def _content_as_text(content: object) -> str:
@@ -100,22 +88,8 @@ def _content_as_text(content: object) -> str:
     return str(content).strip()
 
 
-def _safe_gemini_error(error: Exception) -> str:
-    """Translate provider failures without exposing request details or secrets."""
-    detail = str(error).lower()
-    if "401" in detail or "unauthenticated" in detail or "api_key_invalid" in detail:
-        return "Gemini rejected the API key. Create a new key in Google AI Studio and replace GEMINI_API_KEY in Streamlit Secrets."
-    if "403" in detail or "permission_denied" in detail or "forbidden" in detail:
-        return "This Gemini API key does not have access to the selected model or API project. Check Gemini API access and billing."
-    if "404" in detail or "not_found" in detail:
-        return "The selected Gemini model is unavailable for this API project. Set GEMINI_MODEL to a model available to your key."
-    if "429" in detail or "resource_exhausted" in detail or "quota" in detail:
-        return "Gemini quota is currently unavailable or rate-limited. Check the Google AI Studio project quota and billing, then retry."
-    return "Gemini could not answer this question. Check the API key, selected model, and Gemini quota."
-
-
-def answer_handbook_question(question: str, *, api_key: str, model: str, retriever) -> HandbookAnswer:
-    """Retrieve handbook evidence with LangChain and answer with Gemini only."""
+def answer_handbook_question(question: str, *, retriever) -> HandbookAnswer:
+    """Retrieve handbook evidence with LangChain and answer using local Ollama."""
     if not question.strip():
         raise HandbookCopilotError("Enter a project question before asking the Copilot.")
     try:
@@ -127,14 +101,11 @@ def answer_handbook_question(question: str, *, api_key: str, model: str, retriev
             f"[{index}] {document.metadata.get('source', 'Bosch handbook')}\n{document.page_content}"
             for index, document in enumerate(sources, start=1)
         )
-        llm = ChatGoogleGenerativeAI(
-            model=model,
-            api_key=api_key,
+        llm = ChatOllama(
+            model=LOCAL_CHAT_MODEL,
             temperature=0.2,
-            max_tokens=600,
-            # Free-tier Gemini 2.5 Flash allows only 5 requests per minute.
-            # One question must make one provider request, not retry three times.
-            retries=0,
+            num_predict=500,
+            num_ctx=4_096,
         )
         response = llm.invoke(
             [
@@ -151,8 +122,10 @@ def answer_handbook_question(question: str, *, api_key: str, model: str, retriev
         answer = _content_as_text(response.content)
         if not answer:
             raise HandbookCopilotError("Gemini returned an empty answer. Please try again.")
-        return HandbookAnswer(answer=answer, sources=list(sources), model=model)
+        return HandbookAnswer(answer=answer, sources=list(sources), model=LOCAL_CHAT_MODEL)
     except HandbookCopilotError:
         raise
     except Exception as error:
-        raise HandbookCopilotError(_safe_gemini_error(error)) from error
+        raise HandbookCopilotError(
+            "Ollama could not answer this question. Run `ollama pull llama3.2:1b`, then retry."
+        ) from error
