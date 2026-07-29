@@ -70,6 +70,45 @@ def load_optional_json(relative_path: str) -> dict:
         return json.load(file)
 
 
+@st.cache_data(show_spinner="Loading scored test products...")
+def load_test_predictions() -> pd.DataFrame:
+    """Load the compact scored test output used by the risk-monitor view."""
+    return pd.read_parquet(
+        PROJECT_ROOT / "data" / "processed" / "advanced_ml_test_predictions.parquet",
+        columns=["Id", "failure_probability", "predicted_failure_alert"],
+    )
+
+
+@st.cache_data(show_spinner=False)
+def load_file_bytes(relative_path: str) -> bytes:
+    return (PROJECT_ROOT / relative_path).read_bytes()
+
+
+@st.cache_data(show_spinner=False)
+def load_advanced_model_summary() -> dict[str, float | int | str]:
+    """Return the selected advanced-model metrics for consistent dashboard KPIs."""
+    benchmark_path = PROJECT_ROOT / "adv ML Models" / "phase6_full_clean_split_rate_metrics_completed.csv"
+    outcome_path = REPORTS_DIR / "advanced_ml_test_prediction_summary.csv"
+    if not (benchmark_path.exists() and outcome_path.exists()):
+        return {}
+    completed = pd.read_csv(benchmark_path).query("status == 'completed'")
+    if completed.empty:
+        return {}
+    best = completed.sort_values(["mcc", "pr_auc"], ascending=False).iloc[0]
+    outcome = pd.read_csv(outcome_path).iloc[0]
+    return {
+        "model": str(best["model"]),
+        "validation_mcc": float(best["mcc"]),
+        "validation_pr_auc": float(best["pr_auc"]),
+        "validation_precision": float(best["precision"]),
+        "validation_recall": float(best["recall"]),
+        "test_products_scored": int(outcome["test_products_scored"]),
+        "test_alerts": int(outcome["test_alerts"]),
+        "test_alert_rate": float(outcome["test_alert_rate_pct"]) / 100,
+        "decision_threshold": float(outcome["decision_threshold"]),
+    }
+
+
 def pct(value: float, digits: int = 2) -> str:
     return f"{value:.{digits}f}%"
 
@@ -128,13 +167,25 @@ def page_overview(lines: list[str]) -> None:
     source_catalog = query("SELECT * FROM source_catalog ORDER BY table_name")
     phase11 = load_json("reports/phase11_database_manifest.json")
     phase12 = load_json("reports/phase12_executive_dashboard_manifest.json")
+    advanced_model = load_advanced_model_summary()
 
-    cols = st.columns(5)
+    cols = st.columns(6)
     cols[0].metric("Historical failure rate", pct(baseline.loc["historical_failure_rate", "value"] * 100, 3))
-    cols[1].metric("Validation MCC", f"{baseline.loc['model_mcc', 'value']:.3f}")
-    cols[2].metric("Validation precision", pct(baseline.loc["model_precision", "value"] * 100, 1))
-    cols[3].metric("Test products scored", f"{int(baseline.loc['test_products_scored', 'value']):,}")
-    cols[4].metric("Predicted alerts", f"{int(baseline.loc['test_alerts', 'value']):,}")
+    if advanced_model:
+        cols[1].metric("Validated model", str(advanced_model["model"]))
+        cols[2].metric("Validation MCC", f"{advanced_model['validation_mcc']:.3f}")
+        cols[3].metric("Validation precision", pct(float(advanced_model["validation_precision"]) * 100, 1))
+        cols[4].metric("Test products scored", f"{int(advanced_model['test_products_scored']):,}")
+        cols[5].metric("Predicted alerts", f"{int(advanced_model['test_alerts']):,}")
+        st.caption(
+            "Validation and alert KPIs use the selected advanced LightGBM benchmark. "
+            "Historical failure rate remains a descriptive training-data metric."
+        )
+    else:
+        cols[1].metric("Validation MCC", f"{baseline.loc['model_mcc', 'value']:.3f}")
+        cols[2].metric("Validation precision", pct(baseline.loc["model_precision", "value"] * 100, 1))
+        cols[3].metric("Test products scored", f"{int(baseline.loc['test_products_scored', 'value']):,}")
+        cols[4].metric("Predicted alerts", f"{int(baseline.loc['test_alerts', 'value']):,}")
 
     left, right = st.columns([1.15, 1])
     trend = query("SELECT * FROM failure_time_trends ORDER BY period_order")
@@ -192,62 +243,180 @@ def page_overview(lines: list[str]) -> None:
 
 def page_prediction_model() -> None:
     st.header("Production Failure Prediction Model")
-    model_metrics = query("SELECT * FROM model_metrics ORDER BY rank")
-    improvement = load_csv("reports/phase6_model_improvement_summary.csv")
-    advanced = query("SELECT * FROM advanced_ai_metrics ORDER BY mcc DESC")
+    benchmark_path = PROJECT_ROOT / "adv ML Models" / "phase6_full_clean_split_rate_metrics_completed.csv"
+    test_summary_path = REPORTS_DIR / "advanced_ml_test_prediction_summary.csv"
+    predictions_path = PROJECT_ROOT / "data" / "processed" / "advanced_ml_test_predictions.parquet"
+    submission_path = PROJECT_ROOT / "data" / "processed" / "advanced_ml_sample_submission.csv"
 
-    cols = st.columns(5)
-    best = model_metrics.iloc[0]
-    cols[0].metric("Selected model", best["model"])
-    cols[1].metric("MCC", f"{best['mcc']:.3f}")
-    cols[2].metric("Precision", f"{best['precision']:.3f}")
-    cols[3].metric("Recall", f"{best['recall']:.3f}")
-    cols[4].metric("PR-AUC", f"{best['pr_auc']:.3f}")
+    if not (benchmark_path.exists() and test_summary_path.exists() and predictions_path.exists()):
+        st.info("The advanced-model benchmark and scored test outputs have not been published yet.")
+        return
 
-    left, right = st.columns(2)
-    fig = px.bar(
-        model_metrics,
-        x="model",
-        y="mcc",
-        color="model",
-        labels={"model": "Model", "mcc": "MCC"},
-        title="Phase 6 model comparison",
+    benchmark = pd.read_csv(benchmark_path)
+    completed = benchmark.loc[benchmark["status"].eq("completed")].sort_values(
+        ["mcc", "pr_auc"], ascending=False
     )
-    fig.update_layout(height=420, showlegend=False)
-    left.plotly_chart(fig, width="stretch")
+    test_summary = load_csv("reports/advanced_ml_test_prediction_summary.csv").iloc[0]
+    best_benchmark = completed.iloc[0]
+    model_card = load_optional_json("reports/advanced_ml_model_card.json")
+    default_threshold = float(model_card.get("decision_threshold", test_summary["decision_threshold"]))
 
-    fig = px.scatter(
-        model_metrics,
-        x="recall",
-        y="precision",
-        size="mcc",
-        color="model",
-        hover_data=["f1", "pr_auc", "threshold"],
-        title="Precision and recall trade-off",
+    st.caption(
+        "Selected model: LightGBM using numeric, categorical one-hot, date/timing, and "
+        "product-path features. Test labels are unavailable, so the test view reports risk "
+        "predictions—not test accuracy."
     )
-    fig.update_layout(height=420)
-    right.plotly_chart(fig, width="stretch")
+    hero = st.columns(5)
+    hero[0].metric("Validated model", str(best_benchmark["model"]))
+    hero[1].metric("Validation MCC", f"{best_benchmark['mcc']:.3f}")
+    hero[2].metric("Validation PR-AUC", f"{best_benchmark['pr_auc']:.3f}")
+    hero[3].metric("Test products scored", f"{int(test_summary['test_products_scored']):,}")
+    hero[4].metric("Alerts at model cutoff", f"{int(test_summary['test_alerts']):,}")
 
-    st.subheader("Improvement Experiments")
-    st.dataframe(
-        improvement[["model", "production_safe", "mcc", "precision", "recall", "pr_auc", "notes"]],
-        width="stretch",
-        hide_index=True,
+    benchmark_tab, monitor_tab, lookup_tab, reference_tab = st.tabs(
+        ["Benchmark", "Test Risk Monitor", "Product Lookup", "Phase 6 Reference"]
     )
-    st.subheader("Advanced AI Diagnostics")
-    st.dataframe(
-        advanced[["model", "mcc", "precision", "recall", "pr_auc", "notes"]],
-        width="stretch",
-        hide_index=True,
-    )
-    st.warning(
-        "The Phase 6 LightGBM remains the official production-safe model. "
-        "Leaderboard leakage and validation-optimized blends are research-only."
-    )
+    with benchmark_tab:
+        left, right = st.columns(2)
+        benchmark_chart = px.scatter(
+            completed,
+            x="numeric_present_rate",
+            y="mcc",
+            color="model",
+            symbol="split_ratio",
+            hover_data=["pr_auc", "precision", "recall", "runtime_seconds", "final_feature_count"],
+            labels={"numeric_present_rate": "Minimum present rate", "mcc": "Validation MCC"},
+            title="Validation MCC by feature-coverage gate",
+        )
+        benchmark_chart.update_xaxes(type="log")
+        benchmark_chart.update_layout(height=420)
+        left.plotly_chart(benchmark_chart, width="stretch")
+
+        model_best = completed.loc[completed.groupby("model")["mcc"].idxmax()].sort_values("mcc")
+        comparison_chart = px.bar(
+            model_best,
+            x="mcc",
+            y="model",
+            orientation="h",
+            color="mcc",
+            color_continuous_scale="Blues",
+            hover_data=["split_ratio", "numeric_present_rate", "pr_auc", "runtime_seconds"],
+            labels={"mcc": "Best validation MCC", "model": "Model"},
+            title="Best validated configuration for each model",
+        )
+        comparison_chart.update_layout(height=420, coloraxis_showscale=False)
+        right.plotly_chart(comparison_chart, width="stretch")
+        st.dataframe(
+            completed[
+                ["split_ratio", "numeric_present_rate", "model", "mcc", "pr_auc", "precision", "recall", "runtime_seconds"]
+            ],
+            width="stretch",
+            hide_index=True,
+        )
+
+    with monitor_tab:
+        predictions = load_test_predictions()
+        selected_threshold = st.slider(
+            "Risk threshold for the work queue",
+            min_value=0.0,
+            max_value=1.0,
+            value=round(default_threshold, 3),
+            step=0.001,
+            help="This filter changes the review queue only. The default is the model's training-derived operating threshold.",
+        )
+        queue = predictions.loc[predictions["failure_probability"] >= selected_threshold]
+        queue_cols = st.columns(4)
+        queue_cols[0].metric("Queue size", f"{len(queue):,}")
+        queue_cols[1].metric("Queue share", pct(len(queue) / len(predictions) * 100, 3))
+        queue_cols[2].metric("Default model cutoff", f"{default_threshold:.3f}")
+        queue_cols[3].metric("Highest predicted risk", f"{predictions['failure_probability'].max():.3f}")
+
+        boundaries = sorted({0.0, 0.25, 0.50, 0.75, default_threshold, 0.90, 1.000001})
+        labels = [f"{boundaries[index]:.2f}–{boundaries[index + 1]:.2f}" for index in range(len(boundaries) - 1)]
+        bands = predictions.assign(
+            risk_band=pd.cut(predictions["failure_probability"], bins=boundaries, labels=labels, include_lowest=True)
+        ).groupby("risk_band", observed=True).agg(
+            products=("Id", "size"),
+            mean_probability=("failure_probability", "mean"),
+            default_alerts=("predicted_failure_alert", "sum"),
+        ).reset_index()
+        distribution = px.bar(
+            bands,
+            x="risk_band",
+            y="products",
+            color="mean_probability",
+            color_continuous_scale="YlOrRd",
+            hover_data=["default_alerts"],
+            labels={"risk_band": "Predicted-risk band", "products": "Test products"},
+            title="Scored test-product risk distribution",
+        )
+        distribution.update_layout(height=380, coloraxis_colorbar_title="Mean risk")
+        st.plotly_chart(distribution, width="stretch")
+        st.subheader("Priority review queue")
+        st.dataframe(
+            queue.nlargest(200, "failure_probability"),
+            width="stretch",
+            hide_index=True,
+        )
+        if submission_path.exists():
+            st.download_button(
+                "Download full Id,Response submission",
+                data=load_file_bytes("data/processed/advanced_ml_sample_submission.csv"),
+                file_name="advanced_ml_sample_submission.csv",
+                mime="text/csv",
+            )
+
+    with lookup_tab:
+        predictions = load_test_predictions()
+        product_id = st.number_input(
+            "Test product ID",
+            min_value=1,
+            value=int(predictions.iloc[0]["Id"]),
+            step=1,
+        )
+        product = predictions.loc[predictions["Id"].eq(int(product_id))]
+        if product.empty:
+            st.warning("This ID is not in the scored test dataset.")
+        else:
+            result = product.iloc[0]
+            product_cols = st.columns(3)
+            product_cols[0].metric("Failure probability", f"{result['failure_probability']:.3%}")
+            product_cols[1].metric("Model alert", "Review" if result["predicted_failure_alert"] else "No alert")
+            product_cols[2].metric("Model cutoff", f"{default_threshold:.3f}")
+            st.caption(
+                "Use this score to prioritise inspection. It is not a confirmed failure outcome."
+            )
+
+    with reference_tab:
+        model_metrics = query("SELECT * FROM model_metrics ORDER BY rank")
+        improvement = load_csv("reports/phase6_model_improvement_summary.csv")
+        advanced = query("SELECT * FROM advanced_ai_metrics ORDER BY mcc DESC")
+        left, right = st.columns(2)
+        legacy_chart = px.bar(
+            model_metrics, x="model", y="mcc", color="model",
+            labels={"model": "Model", "mcc": "MCC"}, title="Earlier Phase 6 model comparison"
+        )
+        legacy_chart.update_layout(height=360, showlegend=False)
+        left.plotly_chart(legacy_chart, width="stretch")
+        tradeoff_chart = px.scatter(
+            model_metrics, x="recall", y="precision", size="mcc", color="model",
+            hover_data=["f1", "pr_auc", "threshold"], title="Earlier precision and recall trade-off"
+        )
+        tradeoff_chart.update_layout(height=360)
+        right.plotly_chart(tradeoff_chart, width="stretch")
+        st.dataframe(
+            improvement[["model", "production_safe", "mcc", "precision", "recall", "pr_auc", "notes"]],
+            width="stretch", hide_index=True,
+        )
+        st.dataframe(
+            advanced[["model", "mcc", "precision", "recall", "pr_auc", "notes"]],
+            width="stretch", hide_index=True,
+        )
 
 
 def page_product_families() -> None:
     st.header("Product Family Segmentation")
+    st.caption("Historical product-family profiles are model inputs, but their observed failure rates do not change when the prediction model is refreshed.")
     families = load_csv("reports/phase5_product_family_failure_rates.csv")
     profiles = load_csv("reports/phase5_product_family_profiles.csv")
 
@@ -290,6 +459,7 @@ def page_product_families() -> None:
 
 def page_process_mining(lines: list[str]) -> None:
     st.header("Process Mining and Bottleneck Analysis")
+    st.caption("Process-flow and bottleneck metrics are calculated from observed production events and are independent of the selected prediction model.")
     placeholders = ",".join("?" for _ in lines)
     bottlenecks = query(
         f"""
@@ -336,6 +506,45 @@ def page_process_mining(lines: list[str]) -> None:
 def page_root_cause(lines: list[str]) -> None:
     st.header("Model Explainability & Failure Drivers")
     placeholders = ",".join("?" for _ in lines)
+    available_tables = query("SELECT name FROM sqlite_master WHERE type = 'table'")["name"].tolist()
+    if {"advanced_model_feature_importance", "advanced_model_station_importance"}.issubset(available_tables):
+        drivers = query(
+            "SELECT * FROM advanced_model_feature_importance ORDER BY driver_rank LIMIT 25"
+        )
+        root = query(
+            f"""
+            SELECT line, station, driver_type, feature_count, total_importance_pct,
+                   top_feature_display_name, recommended_action, priority_rank
+            FROM advanced_model_station_importance
+            WHERE line IN ({placeholders}) OR station IN ('timing_level', 'path_level', 'other')
+            ORDER BY priority_rank
+            """,
+            tuple(lines),
+        )
+        fig = px.bar(
+            drivers.head(15).sort_values("importance_pct"),
+            x="importance_pct",
+            y="feature_display_name",
+            orientation="h",
+            color="driver_type",
+            labels={"importance_pct": "Share of LightGBM split importance (%)", "feature_display_name": "Predictive signal"},
+            title="Selected LightGBM global feature importance",
+        )
+        fig.update_layout(height=520)
+        st.plotly_chart(fig, width="stretch")
+        left, right = st.columns(2)
+        left.dataframe(root, width="stretch", hide_index=True)
+        right.dataframe(
+            root[["station", "top_feature_display_name", "recommended_action"]],
+            width="stretch",
+            hide_index=True,
+        )
+        st.warning(
+            "These are global LightGBM split-importances for the selected model, not causal proof or SHAP values. "
+            "Validate any station or timing signal against engineering records before intervention."
+        )
+        return
+
     drivers = query("SELECT * FROM failure_drivers ORDER BY driver_rank LIMIT 25")
     root = query(
         f"""
@@ -380,13 +589,14 @@ def page_root_cause(lines: list[str]) -> None:
     left.dataframe(root, width="stretch", hide_index=True)
     right.dataframe(actions, width="stretch", hide_index=True)
     st.warning(
-        "SHAP explains model behavior. Engineering records are required before treating "
+        "This legacy SHAP analysis explains earlier model behavior. Engineering records are required before treating "
         "a predictive signal as a confirmed physical root cause. Timestamp-derived signals are relative, anonymized measurement indicators—not verified delays."
     )
 
 
 def page_knowledge_graph(lines: list[str]) -> None:
     st.header("Knowledge Graph and Critical Nodes")
+    st.caption("Graph centrality and candidate routes are built from process relationships and observed failures; the model refresh does not recalculate them.")
     placeholders = ",".join("?" for _ in lines)
     critical = query(
         f"""
@@ -499,12 +709,16 @@ def page_copilot() -> None:
 def page_business_impact() -> None:
     st.header("Business Impact Scenario")
     baseline = query("SELECT * FROM executive_kpi_baseline").set_index("metric_key")
+    advanced_model = load_advanced_model_summary()
+    default_volume = int(advanced_model.get("test_products_scored", baseline.loc["test_products_scored", "value"]))
+    alert_rate = float(advanced_model.get("test_alert_rate", baseline.loc["test_alert_rate", "value"]))
+    precision = float(advanced_model.get("validation_precision", baseline.loc["model_precision", "value"]))
     c1, c2, c3, c4 = st.columns(4)
     volume = c1.number_input(
         "Production volume",
         min_value=10_000,
         max_value=20_000_000,
-        value=int(baseline.loc["test_products_scored", "value"]),
+        value=default_volume,
         step=10_000,
     )
     failure_cost = c2.number_input("Cost per failure ($)", min_value=0.0, value=500.0, step=50.0)
@@ -514,12 +728,17 @@ def page_business_impact() -> None:
     impact = calculate_business_impact(
         production_volume=int(volume),
         failure_rate=float(baseline.loc["historical_failure_rate", "value"]),
-        alert_rate=float(baseline.loc["test_alert_rate", "value"]),
-        precision=float(baseline.loc["model_precision", "value"]),
+        alert_rate=alert_rate,
+        precision=precision,
         intervention_effectiveness=effectiveness / 100,
         cost_per_failure=float(failure_cost),
         cost_per_alert_review=float(review_cost),
     )
+    if advanced_model:
+        st.caption(
+            f"Uses the selected {advanced_model['model']} alert rate ({alert_rate:.3%}) and "
+            f"holdout validation precision ({precision:.1%}). This remains an assumption-driven scenario."
+        )
 
     cols = st.columns(5)
     cols[0].metric("Expected failures", f"{impact.expected_failures:,.0f}")
@@ -597,7 +816,15 @@ def main() -> None:
         st.stop()
 
     lines = line_filter()
-    st.sidebar.caption("Source: reviewed phase outputs and SQLite copilot database.")
+    st.sidebar.caption("Sources: reviewed phase outputs, advanced-model artifacts, and SQLite copilot database.")
+    advanced_model = load_advanced_model_summary()
+    if advanced_model:
+        st.sidebar.info(
+            f"**Current validation model**  \n"
+            f"{advanced_model['model']} | MCC {advanced_model['validation_mcc']:.3f}  \n"
+            f"{int(advanced_model['test_alerts']):,} alerts across "
+            f"{int(advanced_model['test_products_scored']):,} scored test products"
+        )
     page = st.sidebar.radio(
         "Dashboard page",
         [

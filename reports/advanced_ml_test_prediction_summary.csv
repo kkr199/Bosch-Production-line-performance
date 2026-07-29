@@ -1,0 +1,2 @@
+model,validation_split,numeric_present_rate,numeric_candidates,numeric_features,categorical_columns,one_hot_levels,final_feature_count,test_products_scored,test_alerts,test_alert_rate_pct,decision_threshold
+LightGBM,80/20,0.0025,908,80,20,50,283,1183748,7003,0.5915955085034991,0.7541669441791505

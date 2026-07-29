@@ -1,0 +1,14 @@
+{
+  "model": "LightGBM",
+  "validation_split": "80/20",
+  "numeric_present_rate": 0.0025,
+  "numeric_candidates": 908,
+  "numeric_features": 80,
+  "categorical_columns": 20,
+  "one_hot_levels": 50,
+  "final_feature_count": 283,
+  "test_products_scored": 1183748,
+  "test_alerts": 7003,
+  "test_alert_rate_pct": 0.5915955085034991,
+  "decision_threshold": 0.7541669441791505
+}
