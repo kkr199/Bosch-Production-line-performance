@@ -70,6 +70,20 @@ def load_optional_json(relative_path: str) -> dict:
         return json.load(file)
 
 
+@st.cache_data(show_spinner="Loading scored test products...")
+def load_test_predictions() -> pd.DataFrame:
+    """Load the compact scored test output used by the risk-monitor view."""
+    return pd.read_parquet(
+        PROJECT_ROOT / "data" / "processed" / "advanced_ml_test_predictions.parquet",
+        columns=["Id", "failure_probability", "predicted_failure_alert"],
+    )
+
+
+@st.cache_data(show_spinner=False)
+def load_file_bytes(relative_path: str) -> bytes:
+    return (PROJECT_ROOT / relative_path).read_bytes()
+
+
 def pct(value: float, digits: int = 2) -> str:
     return f"{value:.{digits}f}%"
 
@@ -192,104 +206,175 @@ def page_overview(lines: list[str]) -> None:
 
 def page_prediction_model() -> None:
     st.header("Production Failure Prediction Model")
-    model_metrics = query("SELECT * FROM model_metrics ORDER BY rank")
-    improvement = load_csv("reports/phase6_model_improvement_summary.csv")
-    advanced = query("SELECT * FROM advanced_ai_metrics ORDER BY mcc DESC")
-
-    cols = st.columns(5)
-    best = model_metrics.iloc[0]
-    cols[0].metric("Selected model", best["model"])
-    cols[1].metric("MCC", f"{best['mcc']:.3f}")
-    cols[2].metric("Precision", f"{best['precision']:.3f}")
-    cols[3].metric("Recall", f"{best['recall']:.3f}")
-    cols[4].metric("PR-AUC", f"{best['pr_auc']:.3f}")
-
-    left, right = st.columns(2)
-    fig = px.bar(
-        model_metrics,
-        x="model",
-        y="mcc",
-        color="model",
-        labels={"model": "Model", "mcc": "MCC"},
-        title="Phase 6 model comparison",
-    )
-    fig.update_layout(height=420, showlegend=False)
-    left.plotly_chart(fig, width="stretch")
-
-    fig = px.scatter(
-        model_metrics,
-        x="recall",
-        y="precision",
-        size="mcc",
-        color="model",
-        hover_data=["f1", "pr_auc", "threshold"],
-        title="Precision and recall trade-off",
-    )
-    fig.update_layout(height=420)
-    right.plotly_chart(fig, width="stretch")
-
-    st.subheader("Improvement Experiments")
-    st.dataframe(
-        improvement[["model", "production_safe", "mcc", "precision", "recall", "pr_auc", "notes"]],
-        width="stretch",
-        hide_index=True,
-    )
-    st.subheader("Advanced AI Diagnostics")
-    st.dataframe(
-        advanced[["model", "mcc", "precision", "recall", "pr_auc", "notes"]],
-        width="stretch",
-        hide_index=True,
-    )
-
     benchmark_path = PROJECT_ROOT / "adv ML Models" / "phase6_full_clean_split_rate_metrics_completed.csv"
     test_summary_path = REPORTS_DIR / "advanced_ml_test_prediction_summary.csv"
-    top_risk_path = REPORTS_DIR / "advanced_ml_top_test_risk_preview.csv"
-    if benchmark_path.exists() and test_summary_path.exists():
-        benchmark = pd.read_csv(benchmark_path)
-        completed = benchmark.loc[benchmark["status"].eq("completed")].sort_values(
-            "mcc", ascending=False
-        )
-        test_summary = load_csv("reports/advanced_ml_test_prediction_summary.csv")
-        best_benchmark = completed.iloc[0]
+    predictions_path = PROJECT_ROOT / "data" / "processed" / "advanced_ml_test_predictions.parquet"
+    submission_path = PROJECT_ROOT / "data" / "processed" / "advanced_ml_sample_submission.csv"
 
-        st.subheader("Validated Full-Data Benchmark and Test Outcomes")
-        b1, b2, b3, b4 = st.columns(4)
-        b1.metric("Best validated model", str(best_benchmark["model"]))
-        b2.metric("Validation MCC", f"{best_benchmark['mcc']:.3f}")
-        b3.metric("Test products scored", f"{int(test_summary.iloc[0]['test_products_scored']):,}")
-        b4.metric("Test alerts", f"{int(test_summary.iloc[0]['test_alerts']):,}")
-        st.caption(
-            "The test outcomes combine numeric, categorical one-hot, date/timing, and "
-            "product-path features. The test data has no Response labels, so this section "
-            "reports model predictions rather than test accuracy."
+    if not (benchmark_path.exists() and test_summary_path.exists() and predictions_path.exists()):
+        st.info("The advanced-model benchmark and scored test outputs have not been published yet.")
+        return
+
+    benchmark = pd.read_csv(benchmark_path)
+    completed = benchmark.loc[benchmark["status"].eq("completed")].sort_values(
+        ["mcc", "pr_auc"], ascending=False
+    )
+    test_summary = load_csv("reports/advanced_ml_test_prediction_summary.csv").iloc[0]
+    best_benchmark = completed.iloc[0]
+    model_card = load_optional_json("reports/advanced_ml_model_card.json")
+    default_threshold = float(model_card.get("decision_threshold", test_summary["decision_threshold"]))
+
+    st.caption(
+        "Selected model: LightGBM using numeric, categorical one-hot, date/timing, and "
+        "product-path features. Test labels are unavailable, so the test view reports risk "
+        "predictions—not test accuracy."
+    )
+    hero = st.columns(5)
+    hero[0].metric("Validated model", str(best_benchmark["model"]))
+    hero[1].metric("Validation MCC", f"{best_benchmark['mcc']:.3f}")
+    hero[2].metric("Validation PR-AUC", f"{best_benchmark['pr_auc']:.3f}")
+    hero[3].metric("Test products scored", f"{int(test_summary['test_products_scored']):,}")
+    hero[4].metric("Alerts at model cutoff", f"{int(test_summary['test_alerts']):,}")
+
+    benchmark_tab, monitor_tab, lookup_tab, reference_tab = st.tabs(
+        ["Benchmark", "Test Risk Monitor", "Product Lookup", "Phase 6 Reference"]
+    )
+    with benchmark_tab:
+        left, right = st.columns(2)
+        benchmark_chart = px.scatter(
+            completed,
+            x="numeric_present_rate",
+            y="mcc",
+            color="model",
+            symbol="split_ratio",
+            hover_data=["pr_auc", "precision", "recall", "runtime_seconds", "final_feature_count"],
+            labels={"numeric_present_rate": "Minimum present rate", "mcc": "Validation MCC"},
+            title="Validation MCC by feature-coverage gate",
         )
+        benchmark_chart.update_xaxes(type="log")
+        benchmark_chart.update_layout(height=420)
+        left.plotly_chart(benchmark_chart, width="stretch")
+
+        model_best = completed.loc[completed.groupby("model")["mcc"].idxmax()].sort_values("mcc")
+        comparison_chart = px.bar(
+            model_best,
+            x="mcc",
+            y="model",
+            orientation="h",
+            color="mcc",
+            color_continuous_scale="Blues",
+            hover_data=["split_ratio", "numeric_present_rate", "pr_auc", "runtime_seconds"],
+            labels={"mcc": "Best validation MCC", "model": "Model"},
+            title="Best validated configuration for each model",
+        )
+        comparison_chart.update_layout(height=420, coloraxis_showscale=False)
+        right.plotly_chart(comparison_chart, width="stretch")
         st.dataframe(
             completed[
-                [
-                    "split_ratio",
-                    "numeric_present_rate",
-                    "model",
-                    "mcc",
-                    "pr_auc",
-                    "precision",
-                    "recall",
-                    "runtime_seconds",
-                ]
+                ["split_ratio", "numeric_present_rate", "model", "mcc", "pr_auc", "precision", "recall", "runtime_seconds"]
             ],
             width="stretch",
             hide_index=True,
         )
-        if top_risk_path.exists():
-            st.subheader("Highest-Risk Test Products")
-            st.dataframe(
-                load_csv("reports/advanced_ml_top_test_risk_preview.csv"),
-                width="stretch",
-                hide_index=True,
+
+    with monitor_tab:
+        predictions = load_test_predictions()
+        selected_threshold = st.slider(
+            "Risk threshold for the work queue",
+            min_value=0.0,
+            max_value=1.0,
+            value=round(default_threshold, 3),
+            step=0.001,
+            help="This filter changes the review queue only. The default is the model's training-derived operating threshold.",
+        )
+        queue = predictions.loc[predictions["failure_probability"] >= selected_threshold]
+        queue_cols = st.columns(4)
+        queue_cols[0].metric("Queue size", f"{len(queue):,}")
+        queue_cols[1].metric("Queue share", pct(len(queue) / len(predictions) * 100, 3))
+        queue_cols[2].metric("Default model cutoff", f"{default_threshold:.3f}")
+        queue_cols[3].metric("Highest predicted risk", f"{predictions['failure_probability'].max():.3f}")
+
+        boundaries = sorted({0.0, 0.25, 0.50, 0.75, default_threshold, 0.90, 1.000001})
+        labels = [f"{boundaries[index]:.2f}–{boundaries[index + 1]:.2f}" for index in range(len(boundaries) - 1)]
+        bands = predictions.assign(
+            risk_band=pd.cut(predictions["failure_probability"], bins=boundaries, labels=labels, include_lowest=True)
+        ).groupby("risk_band", observed=True).agg(
+            products=("Id", "size"),
+            mean_probability=("failure_probability", "mean"),
+            default_alerts=("predicted_failure_alert", "sum"),
+        ).reset_index()
+        distribution = px.bar(
+            bands,
+            x="risk_band",
+            y="products",
+            color="mean_probability",
+            color_continuous_scale="YlOrRd",
+            hover_data=["default_alerts"],
+            labels={"risk_band": "Predicted-risk band", "products": "Test products"},
+            title="Scored test-product risk distribution",
+        )
+        distribution.update_layout(height=380, coloraxis_colorbar_title="Mean risk")
+        st.plotly_chart(distribution, width="stretch")
+        st.subheader("Priority review queue")
+        st.dataframe(
+            queue.nlargest(200, "failure_probability"),
+            width="stretch",
+            hide_index=True,
+        )
+        if submission_path.exists():
+            st.download_button(
+                "Download full Id,Response submission",
+                data=load_file_bytes("data/processed/advanced_ml_sample_submission.csv"),
+                file_name="advanced_ml_sample_submission.csv",
+                mime="text/csv",
             )
-    st.warning(
-        "The Phase 6 LightGBM remains the official production-safe model. "
-        "Leaderboard leakage and validation-optimized blends are research-only."
-    )
+
+    with lookup_tab:
+        predictions = load_test_predictions()
+        product_id = st.number_input(
+            "Test product ID",
+            min_value=1,
+            value=int(predictions.iloc[0]["Id"]),
+            step=1,
+        )
+        product = predictions.loc[predictions["Id"].eq(int(product_id))]
+        if product.empty:
+            st.warning("This ID is not in the scored test dataset.")
+        else:
+            result = product.iloc[0]
+            product_cols = st.columns(3)
+            product_cols[0].metric("Failure probability", f"{result['failure_probability']:.3%}")
+            product_cols[1].metric("Model alert", "Review" if result["predicted_failure_alert"] else "No alert")
+            product_cols[2].metric("Model cutoff", f"{default_threshold:.3f}")
+            st.caption(
+                "Use this score to prioritise inspection. It is not a confirmed failure outcome."
+            )
+
+    with reference_tab:
+        model_metrics = query("SELECT * FROM model_metrics ORDER BY rank")
+        improvement = load_csv("reports/phase6_model_improvement_summary.csv")
+        advanced = query("SELECT * FROM advanced_ai_metrics ORDER BY mcc DESC")
+        left, right = st.columns(2)
+        legacy_chart = px.bar(
+            model_metrics, x="model", y="mcc", color="model",
+            labels={"model": "Model", "mcc": "MCC"}, title="Earlier Phase 6 model comparison"
+        )
+        legacy_chart.update_layout(height=360, showlegend=False)
+        left.plotly_chart(legacy_chart, width="stretch")
+        tradeoff_chart = px.scatter(
+            model_metrics, x="recall", y="precision", size="mcc", color="model",
+            hover_data=["f1", "pr_auc", "threshold"], title="Earlier precision and recall trade-off"
+        )
+        tradeoff_chart.update_layout(height=360)
+        right.plotly_chart(tradeoff_chart, width="stretch")
+        st.dataframe(
+            improvement[["model", "production_safe", "mcc", "precision", "recall", "pr_auc", "notes"]],
+            width="stretch", hide_index=True,
+        )
+        st.dataframe(
+            advanced[["model", "mcc", "precision", "recall", "pr_auc", "notes"]],
+            width="stretch", hide_index=True,
+        )
 
 
 def page_product_families() -> None:
