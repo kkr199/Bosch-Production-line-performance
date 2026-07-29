@@ -416,6 +416,7 @@ def page_prediction_model() -> None:
 
 def page_product_families() -> None:
     st.header("Product Family Segmentation")
+    st.caption("Historical product-family profiles are model inputs, but their observed failure rates do not change when the prediction model is refreshed.")
     families = load_csv("reports/phase5_product_family_failure_rates.csv")
     profiles = load_csv("reports/phase5_product_family_profiles.csv")
 
@@ -458,6 +459,7 @@ def page_product_families() -> None:
 
 def page_process_mining(lines: list[str]) -> None:
     st.header("Process Mining and Bottleneck Analysis")
+    st.caption("Process-flow and bottleneck metrics are calculated from observed production events and are independent of the selected prediction model.")
     placeholders = ",".join("?" for _ in lines)
     bottlenecks = query(
         f"""
@@ -504,6 +506,45 @@ def page_process_mining(lines: list[str]) -> None:
 def page_root_cause(lines: list[str]) -> None:
     st.header("Model Explainability & Failure Drivers")
     placeholders = ",".join("?" for _ in lines)
+    available_tables = query("SELECT name FROM sqlite_master WHERE type = 'table'")["name"].tolist()
+    if {"advanced_model_feature_importance", "advanced_model_station_importance"}.issubset(available_tables):
+        drivers = query(
+            "SELECT * FROM advanced_model_feature_importance ORDER BY driver_rank LIMIT 25"
+        )
+        root = query(
+            f"""
+            SELECT line, station, driver_type, feature_count, total_importance_pct,
+                   top_feature_display_name, recommended_action, priority_rank
+            FROM advanced_model_station_importance
+            WHERE line IN ({placeholders}) OR station IN ('timing_level', 'path_level', 'other')
+            ORDER BY priority_rank
+            """,
+            tuple(lines),
+        )
+        fig = px.bar(
+            drivers.head(15).sort_values("importance_pct"),
+            x="importance_pct",
+            y="feature_display_name",
+            orientation="h",
+            color="driver_type",
+            labels={"importance_pct": "Share of LightGBM split importance (%)", "feature_display_name": "Predictive signal"},
+            title="Selected LightGBM global feature importance",
+        )
+        fig.update_layout(height=520)
+        st.plotly_chart(fig, width="stretch")
+        left, right = st.columns(2)
+        left.dataframe(root, width="stretch", hide_index=True)
+        right.dataframe(
+            root[["station", "top_feature_display_name", "recommended_action"]],
+            width="stretch",
+            hide_index=True,
+        )
+        st.warning(
+            "These are global LightGBM split-importances for the selected model, not causal proof or SHAP values. "
+            "Validate any station or timing signal against engineering records before intervention."
+        )
+        return
+
     drivers = query("SELECT * FROM failure_drivers ORDER BY driver_rank LIMIT 25")
     root = query(
         f"""
@@ -548,13 +589,14 @@ def page_root_cause(lines: list[str]) -> None:
     left.dataframe(root, width="stretch", hide_index=True)
     right.dataframe(actions, width="stretch", hide_index=True)
     st.warning(
-        "SHAP explains model behavior. Engineering records are required before treating "
+        "This legacy SHAP analysis explains earlier model behavior. Engineering records are required before treating "
         "a predictive signal as a confirmed physical root cause. Timestamp-derived signals are relative, anonymized measurement indicators—not verified delays."
     )
 
 
 def page_knowledge_graph(lines: list[str]) -> None:
     st.header("Knowledge Graph and Critical Nodes")
+    st.caption("Graph centrality and candidate routes are built from process relationships and observed failures; the model refresh does not recalculate them.")
     placeholders = ",".join("?" for _ in lines)
     critical = query(
         f"""

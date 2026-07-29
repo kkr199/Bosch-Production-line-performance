@@ -52,3 +52,17 @@ It writes the complete probabilities, `Id,Response` sample submission,
 prediction summary, risk preview, and model card to `data/processed`, `reports`,
 and `models`. Test labels are unavailable, so those outputs are predictions,
 not test accuracy.
+
+## Refresh dashboard metrics and explainability
+
+After scoring, synchronise the selected LightGBM validation metrics, test
+outcomes, and global feature importances into the SQLite dashboard database:
+
+```powershell
+.\.venv\Scripts\python.exe "adv ML Models\sync_dashboard_model_metrics.py"
+```
+
+This updates model-dependent KPI records and creates separate selected-model
+importance tables. It deliberately leaves product-family, process-mining, and
+knowledge-graph tables unchanged because they describe observed process data,
+not model output.
