@@ -240,6 +240,52 @@ def page_prediction_model() -> None:
         width="stretch",
         hide_index=True,
     )
+
+    benchmark_path = PROJECT_ROOT / "adv ML Models" / "phase6_full_clean_split_rate_metrics_completed.csv"
+    test_summary_path = REPORTS_DIR / "advanced_ml_test_prediction_summary.csv"
+    top_risk_path = REPORTS_DIR / "advanced_ml_top_test_risk_preview.csv"
+    if benchmark_path.exists() and test_summary_path.exists():
+        benchmark = pd.read_csv(benchmark_path)
+        completed = benchmark.loc[benchmark["status"].eq("completed")].sort_values(
+            "mcc", ascending=False
+        )
+        test_summary = load_csv("reports/advanced_ml_test_prediction_summary.csv")
+        best_benchmark = completed.iloc[0]
+
+        st.subheader("Validated Full-Data Benchmark and Test Outcomes")
+        b1, b2, b3, b4 = st.columns(4)
+        b1.metric("Best validated model", str(best_benchmark["model"]))
+        b2.metric("Validation MCC", f"{best_benchmark['mcc']:.3f}")
+        b3.metric("Test products scored", f"{int(test_summary.iloc[0]['test_products_scored']):,}")
+        b4.metric("Test alerts", f"{int(test_summary.iloc[0]['test_alerts']):,}")
+        st.caption(
+            "The test outcomes combine numeric, categorical one-hot, date/timing, and "
+            "product-path features. The test data has no Response labels, so this section "
+            "reports model predictions rather than test accuracy."
+        )
+        st.dataframe(
+            completed[
+                [
+                    "split_ratio",
+                    "numeric_present_rate",
+                    "model",
+                    "mcc",
+                    "pr_auc",
+                    "precision",
+                    "recall",
+                    "runtime_seconds",
+                ]
+            ],
+            width="stretch",
+            hide_index=True,
+        )
+        if top_risk_path.exists():
+            st.subheader("Highest-Risk Test Products")
+            st.dataframe(
+                load_csv("reports/advanced_ml_top_test_risk_preview.csv"),
+                width="stretch",
+                hide_index=True,
+            )
     st.warning(
         "The Phase 6 LightGBM remains the official production-safe model. "
         "Leaderboard leakage and validation-optimized blends are research-only."
