@@ -84,6 +84,31 @@ def load_file_bytes(relative_path: str) -> bytes:
     return (PROJECT_ROOT / relative_path).read_bytes()
 
 
+@st.cache_data(show_spinner=False)
+def load_advanced_model_summary() -> dict[str, float | int | str]:
+    """Return the selected advanced-model metrics for consistent dashboard KPIs."""
+    benchmark_path = PROJECT_ROOT / "adv ML Models" / "phase6_full_clean_split_rate_metrics_completed.csv"
+    outcome_path = REPORTS_DIR / "advanced_ml_test_prediction_summary.csv"
+    if not (benchmark_path.exists() and outcome_path.exists()):
+        return {}
+    completed = pd.read_csv(benchmark_path).query("status == 'completed'")
+    if completed.empty:
+        return {}
+    best = completed.sort_values(["mcc", "pr_auc"], ascending=False).iloc[0]
+    outcome = pd.read_csv(outcome_path).iloc[0]
+    return {
+        "model": str(best["model"]),
+        "validation_mcc": float(best["mcc"]),
+        "validation_pr_auc": float(best["pr_auc"]),
+        "validation_precision": float(best["precision"]),
+        "validation_recall": float(best["recall"]),
+        "test_products_scored": int(outcome["test_products_scored"]),
+        "test_alerts": int(outcome["test_alerts"]),
+        "test_alert_rate": float(outcome["test_alert_rate_pct"]) / 100,
+        "decision_threshold": float(outcome["decision_threshold"]),
+    }
+
+
 def pct(value: float, digits: int = 2) -> str:
     return f"{value:.{digits}f}%"
 
@@ -142,13 +167,25 @@ def page_overview(lines: list[str]) -> None:
     source_catalog = query("SELECT * FROM source_catalog ORDER BY table_name")
     phase11 = load_json("reports/phase11_database_manifest.json")
     phase12 = load_json("reports/phase12_executive_dashboard_manifest.json")
+    advanced_model = load_advanced_model_summary()
 
-    cols = st.columns(5)
+    cols = st.columns(6)
     cols[0].metric("Historical failure rate", pct(baseline.loc["historical_failure_rate", "value"] * 100, 3))
-    cols[1].metric("Validation MCC", f"{baseline.loc['model_mcc', 'value']:.3f}")
-    cols[2].metric("Validation precision", pct(baseline.loc["model_precision", "value"] * 100, 1))
-    cols[3].metric("Test products scored", f"{int(baseline.loc['test_products_scored', 'value']):,}")
-    cols[4].metric("Predicted alerts", f"{int(baseline.loc['test_alerts', 'value']):,}")
+    if advanced_model:
+        cols[1].metric("Validated model", str(advanced_model["model"]))
+        cols[2].metric("Validation MCC", f"{advanced_model['validation_mcc']:.3f}")
+        cols[3].metric("Validation precision", pct(float(advanced_model["validation_precision"]) * 100, 1))
+        cols[4].metric("Test products scored", f"{int(advanced_model['test_products_scored']):,}")
+        cols[5].metric("Predicted alerts", f"{int(advanced_model['test_alerts']):,}")
+        st.caption(
+            "Validation and alert KPIs use the selected advanced LightGBM benchmark. "
+            "Historical failure rate remains a descriptive training-data metric."
+        )
+    else:
+        cols[1].metric("Validation MCC", f"{baseline.loc['model_mcc', 'value']:.3f}")
+        cols[2].metric("Validation precision", pct(baseline.loc["model_precision", "value"] * 100, 1))
+        cols[3].metric("Test products scored", f"{int(baseline.loc['test_products_scored', 'value']):,}")
+        cols[4].metric("Predicted alerts", f"{int(baseline.loc['test_alerts', 'value']):,}")
 
     left, right = st.columns([1.15, 1])
     trend = query("SELECT * FROM failure_time_trends ORDER BY period_order")
@@ -630,12 +667,16 @@ def page_copilot() -> None:
 def page_business_impact() -> None:
     st.header("Business Impact Scenario")
     baseline = query("SELECT * FROM executive_kpi_baseline").set_index("metric_key")
+    advanced_model = load_advanced_model_summary()
+    default_volume = int(advanced_model.get("test_products_scored", baseline.loc["test_products_scored", "value"]))
+    alert_rate = float(advanced_model.get("test_alert_rate", baseline.loc["test_alert_rate", "value"]))
+    precision = float(advanced_model.get("validation_precision", baseline.loc["model_precision", "value"]))
     c1, c2, c3, c4 = st.columns(4)
     volume = c1.number_input(
         "Production volume",
         min_value=10_000,
         max_value=20_000_000,
-        value=int(baseline.loc["test_products_scored", "value"]),
+        value=default_volume,
         step=10_000,
     )
     failure_cost = c2.number_input("Cost per failure ($)", min_value=0.0, value=500.0, step=50.0)
@@ -645,12 +686,17 @@ def page_business_impact() -> None:
     impact = calculate_business_impact(
         production_volume=int(volume),
         failure_rate=float(baseline.loc["historical_failure_rate", "value"]),
-        alert_rate=float(baseline.loc["test_alert_rate", "value"]),
-        precision=float(baseline.loc["model_precision", "value"]),
+        alert_rate=alert_rate,
+        precision=precision,
         intervention_effectiveness=effectiveness / 100,
         cost_per_failure=float(failure_cost),
         cost_per_alert_review=float(review_cost),
     )
+    if advanced_model:
+        st.caption(
+            f"Uses the selected {advanced_model['model']} alert rate ({alert_rate:.3%}) and "
+            f"holdout validation precision ({precision:.1%}). This remains an assumption-driven scenario."
+        )
 
     cols = st.columns(5)
     cols[0].metric("Expected failures", f"{impact.expected_failures:,.0f}")
@@ -728,7 +774,15 @@ def main() -> None:
         st.stop()
 
     lines = line_filter()
-    st.sidebar.caption("Source: reviewed phase outputs and SQLite copilot database.")
+    st.sidebar.caption("Sources: reviewed phase outputs, advanced-model artifacts, and SQLite copilot database.")
+    advanced_model = load_advanced_model_summary()
+    if advanced_model:
+        st.sidebar.info(
+            f"**Current validation model**  \n"
+            f"{advanced_model['model']} | MCC {advanced_model['validation_mcc']:.3f}  \n"
+            f"{int(advanced_model['test_alerts']):,} alerts across "
+            f"{int(advanced_model['test_products_scored']):,} scored test products"
+        )
     page = st.sidebar.radio(
         "Dashboard page",
         [
