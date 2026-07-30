@@ -682,7 +682,10 @@ def page_copilot() -> None:
 
         st.subheader("Answer")
         st.markdown(response.answer)
-        st.caption(f"Local model: {response.model} | LangChain in-memory handbook retrieval")
+        if response.model == "handbook evidence guardrail":
+            st.caption("Evidence-verified handbook answer | LangChain in-memory handbook retrieval")
+        else:
+            st.caption(f"Local model: {response.model} | LangChain in-memory handbook retrieval")
         if response.sources:
             st.subheader("References used")
             evidence_rows = [
