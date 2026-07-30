@@ -77,7 +77,18 @@ def _candidate_chunks(question: str, *, limit: int = 12) -> list[Document]:
 
     def score(document: Document) -> int:
         text = document.page_content.lower()
-        return sum(text.count(term) for term in terms)
+        relevance = sum(text.count(term) for term in terms)
+        # This is the current controlled benchmark record. Prefer it to legacy
+        # examples when the question concerns model performance.
+        is_current_model_question = bool(
+            terms & {"lightgbm", "mcc", "pr_auc", "precision", "recall", "threshold", "present"}
+        )
+        if (
+            is_current_model_question
+            and document.metadata.get("source") == "Bosch_Full_Data_Model_Performance_Deep_Dive.md"
+        ):
+            relevance += 50
+        return relevance
 
     return sorted(documents, key=score, reverse=True)[:limit]
 
@@ -122,16 +133,23 @@ def answer_handbook_question(question: str, *, retriever) -> HandbookAnswer:
         llm = ChatOllama(
             model=LOCAL_CHAT_MODEL,
             temperature=0.2,
-            num_predict=500,
-            num_ctx=4_096,
+            # A small local model is most useful here for a short handbook answer.
+            # Limiting the completion keeps the dashboard responsive on a laptop.
+            num_predict=64,
+            num_ctx=2_048,
+            keep_alive="10m",
+            client_kwargs={"timeout": 300},
         )
         response = llm.invoke(
             [
                 SystemMessage(
                     content=(
                         "You are the Bosch Production Line Performance Copilot. Answer only from the supplied handbook "
-                        "excerpts. Use clear, human language for a mixed plant and analytics audience. Do not invent "
-                        "facts or claim that a recommendation is already deployed. Cite claims with [1], [2], and so on."
+                        "excerpts. Use clear, human language for a mixed plant and analytics audience. MCC means "
+                        "Matthews correlation coefficient. Never invent metric definitions or values; say when the "
+                        "provided excerpts do not state an answer. Answer the user's exact question in at most two "
+                        "short sentences; do not introduce additional questions or extra metric definitions unless "
+                        "asked. Cite claims with [1], [2], and so on."
                     )
                 ),
                 HumanMessage(content=f"Question: {question}\n\nHandbook excerpts:\n{context}"),
@@ -145,5 +163,5 @@ def answer_handbook_question(question: str, *, retriever) -> HandbookAnswer:
         raise
     except Exception as error:
         raise HandbookCopilotError(
-            "Ollama could not answer this question. Run `ollama pull llama3.2:1b`, then retry."
+            "Ollama could not finish the response. Keep Ollama running and retry; the first answer can take a minute on a CPU-only computer."
         ) from error
