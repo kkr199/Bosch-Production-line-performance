@@ -52,7 +52,11 @@ def handbook_documents() -> tuple[Document, ...]:
     """Load every handbook Markdown file; API-key files are never read."""
     handbook_dir = _handbook_dir()
     source_documents: list[Document] = []
-    for path in sorted(handbook_dir.glob("Bosch_Handbook_*.md")):
+    excluded_name_tokens = {"api_key", "apikey", "secret", "credential", "token", "password"}
+    for path in sorted(handbook_dir.glob("*.md")):
+        normalized_name = path.name.lower().replace("-", "_").replace(" ", "_")
+        if any(token in normalized_name for token in excluded_name_tokens):
+            continue
         text = _clean_markdown(path.read_text(encoding="utf-8", errors="ignore"))
         if text:
             source_documents.append(Document(page_content=text, metadata={"source": path.name}))
