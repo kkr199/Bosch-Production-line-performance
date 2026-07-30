@@ -118,9 +118,9 @@ def money(value: float) -> str:
 
 
 @st.cache_resource(show_spinner=False)
-def get_handbook_retriever():
-    """Build the local Ollama handbook index once per application process."""
-    return langchain_handbook.build_retriever()
+def get_handbook_retriever(question: str):
+    """Build a compact local handbook index for the current question."""
+    return langchain_handbook.build_retriever(question)
 
 
 def feature_display_name(feature: str) -> str:
@@ -671,7 +671,7 @@ def page_copilot() -> None:
     if ask:
         try:
             with st.spinner("Searching the local handbook and drafting an answer..."):
-                retriever = get_handbook_retriever()
+                retriever = get_handbook_retriever(question)
                 response = langchain_handbook.answer_handbook_question(
                     question,
                     retriever=retriever,

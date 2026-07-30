@@ -68,13 +68,27 @@ def handbook_documents() -> tuple[Document, ...]:
     return tuple(splitter.split_documents(source_documents))
 
 
-def build_retriever():
-    """Create a fully local LangChain vector index through Ollama embeddings."""
+def _candidate_chunks(question: str, *, limit: int = 12) -> list[Document]:
+    """Use a fast lexical pass before embedding the most relevant handbook chunks."""
+    terms = set(re.findall(r"[a-z0-9_]{3,}", question.lower()))
+    documents = list(handbook_documents())
+    if not terms:
+        return documents[:limit]
+
+    def score(document: Document) -> int:
+        text = document.page_content.lower()
+        return sum(text.count(term) for term in terms)
+
+    return sorted(documents, key=score, reverse=True)[:limit]
+
+
+def build_retriever(question: str):
+    """Create a local LangChain vector index for the current question."""
     try:
         embeddings = OllamaEmbeddings(model=LOCAL_EMBEDDING_MODEL)
         store = InMemoryVectorStore(embedding=embeddings)
-        store.add_documents(list(handbook_documents()))
-        return store.as_retriever(search_kwargs={"k": 4})
+        store.add_documents(_candidate_chunks(question))
+        return store.as_retriever(search_kwargs={"k": 3})
     except Exception as error:
         raise HandbookCopilotError(
             "Ollama is not ready. Install Ollama, then run `ollama pull nomic-embed-text` and try again."
@@ -125,7 +139,7 @@ def answer_handbook_question(question: str, *, retriever) -> HandbookAnswer:
         )
         answer = _content_as_text(response.content)
         if not answer:
-            raise HandbookCopilotError("Gemini returned an empty answer. Please try again.")
+            raise HandbookCopilotError("Ollama returned an empty answer. Please try again.")
         return HandbookAnswer(answer=answer, sources=list(sources), model=LOCAL_CHAT_MODEL)
     except HandbookCopilotError:
         raise
